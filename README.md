@@ -3,7 +3,7 @@
 
 ## Compiling
 
-```bash
+```terminal
 $ cmake -B build
 $ make -C build
 ```
@@ -12,14 +12,14 @@ $ make -C build
 
 
 Usage:
-```bash
+```terminal
 $ ./build/key_recovery/key_recovery
 Usage: <r> <w> <ntests> <n_out_spectrum> <n_tries> <seed> <nthreads> [out_spec_step, out_spec_lim]
 ```
 
 Simulating a BIKE key recovery with 4000 known entries outside the spectrum.
 
-```bash
+```terminal
 $ ./build/key_recovery/key_recovery 12323 67 1 4000 100 0 1
 =============== New battery n_out_spec = 4000 ============
 
@@ -39,14 +39,13 @@ Targeting key:
 ## Running simulation on the skipping fault on the 2nd iteration
 
 Usage:
-```bash
+```terminal
 $ ./build/bike/bike-fia-simulation
 Usage: ./build/bike/bike-fia-simulation <seed> <n_decaps>
-
 ```
 
 Seeing the impact of the skipping fault in 10 decapsulations.
-```
+```terminal
 $ ./build/bike/bike-fia-simulation 1 10
 tmp_syndrome_weight,decaps_failed
 3322,1
