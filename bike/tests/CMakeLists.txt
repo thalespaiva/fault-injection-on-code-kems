@@ -6,6 +6,14 @@ if(USE_NIST_RAND)
 
   target_sources(bike-test
     PRIVATE
+      ${CMAKE_CURRENT_LIST_DIR}/FromNIST/rng.c
+      ${CMAKE_CURRENT_LIST_DIR}/FromNIST/PQCgenKAT_kem.c
+
+      ${HEADERS}
+  )
+
+  target_sources(bike-fia-simulation
+    PRIVATE
       ${CMAKE_CURRENT_LIST_DIR}/FromNIST/rng.c 
       ${CMAKE_CURRENT_LIST_DIR}/FromNIST/PQCgenKAT_kem.c
       
@@ -15,5 +23,10 @@ else()
   target_sources(bike-test
     PRIVATE
       ${CMAKE_CURRENT_LIST_DIR}/main_test.c
+  )
+
+  target_sources(bike-fia-simulation
+    PRIVATE
+      ${CMAKE_CURRENT_LIST_DIR}/fia_simulation.c
   )
 endif()
