@@ -43,7 +43,7 @@ Usage:
 $ ./build/bike/bike-fia-simulation
 Usage: ./build/bike/bike-fia-simulation <seed> <n_decaps>
 
-``
+```
 
 Seeing the impact of the skipping fault in 10 decapsulations.
 ```
