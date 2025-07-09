@@ -16,6 +16,22 @@
 #include "measurements.h"
 #include "utilities.h"
 #include "cpu_features.h"
+#include "utilities.h"
+
+// BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
+
+pad_e_t global_e = {0};
+
+// END ATTACKER VARIABLES =========================================================================
+
+
+// BEGIN SECRET VARIABLES -- NOT KNOWN TO THE FIA ATTACKER ========================================
+
+pad_r_t global_h0 = {0};
+pad_r_t global_h1 = {0};
+
+// END SECRET VARIABLES ===========================================================================
+
 
 typedef struct magic_number_s {
   uint64_t val[4];
@@ -33,6 +49,58 @@ typedef struct magic_number_s {
      (0 != memcmp((param).magic2.val, magic.val, sizeof(magic)))) { \
     printf("Magic is incorrect for param\n");                       \
   }
+
+
+#define R_SPECTRUM_SIZE (R_BITS / 2) + 1
+
+// The spectrum of `r`-bit vectors
+typedef struct r_spectrum_s {
+  uint32_t multiplicities[R_SPECTRUM_SIZE];
+} r_spectrum_t;
+
+
+void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num) {
+  for (uint32_t i = 0; i < bits_num; i++) {
+    if ((in[i / 64] >> (i % 64)) & 1) {
+      printf("%d, ", i);
+    }
+  }
+  printf("\n");
+}
+
+// Circular distance between `pos1` and `pos2` in a (circular) vector of size `length`.
+int get_distance(int pos1, int pos2, int length) {
+    int dist1, dist2;
+
+    dist1 = abs(pos2 - pos1);
+    dist2 = length - dist1;
+    if (dist1 <= dist2)
+        return dist1;
+    return dist2;
+}
+
+// Computes the spectrum of an `r`-bit vector.
+// The `bits_num` parameter should be always equals to `R_BITS` -- this parameter should be removed
+// in the near future, it was here just for previous compatibility that is not needed.
+void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in, IN const uint32_t bits_num) {
+  assert (bits_num == R_BITS);
+  uint32_t support[R_BITS] = {0};
+
+  uint32_t n_support = 0;
+  for (uint32_t i = 0; i < bits_num; i++) {
+    if ((in[i / 64] >> (i % 64)) & 1) {
+      support[n_support++] = i;
+    }
+  }
+
+  bike_memset(spectrum->multiplicities, 0, R_SPECTRUM_SIZE);
+  for (uint32_t i = 0; i < n_support; i++) {
+    for (uint32_t j = i + 1; j < n_support; j++) {
+      uint32_t distance = get_distance(support[i], support[j], R_BITS);
+      spectrum->multiplicities[distance] += 1;
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////
 //                 Main function for testing
@@ -65,13 +133,25 @@ int main(int argc, char *argv[])
   // Key generation
   assert(crypto_kem_keypair(pk.val, sk.val) == 0);
 
-  printf("tmp_syndrome_weight,decaps_failed\n");
+  r_spectrum_t spectrum_h0 = {0};
+  get_r_spectrum(&spectrum_h0, (const uint64_t *)global_h0.val.raw, R_BITS);
+
+  // The vectors used to estimate the likelihood that a distance is in the spectrum of `h0`
+  uint32_t e0_spec_fails[R_SPECTRUM_SIZE] = {0};
+  uint32_t e0_spec_total[R_SPECTRUM_SIZE] = {0};
+
   for(size_t i = 1; i <= n_decaps; ++i) {
 
     uint32_t dec_rc = 0;
 
     // Encapsulate
     assert(crypto_kem_enc(ct.val, k_enc.val, pk.val) == 0);
+
+    // IMPORTANT: this should be made before decryption, otherwise `crypto_kem_dec` can
+    // overwrite `global_e` with an invalid value (in case of decoding error), during the
+    // reencryption procedure
+    r_spectrum_t spectrum_e0 = {0};
+    get_r_spectrum(&spectrum_e0, (const uint64_t *)PE0_RAW(&global_e), R_BITS);
 
     // Decapsulate
     dec_rc = crypto_kem_dec(k_dec.val, ct.val, sk.val);
@@ -87,7 +167,14 @@ int main(int argc, char *argv[])
         decaps_failure = 1;
       }
     }
-    printf("%d\n", decaps_failure);
+
+    // Update
+    for (int d = 0; d < R_SPECTRUM_SIZE; d++) {
+      if (spectrum_e0.multiplicities[d]) {
+        e0_spec_fails[d] += decaps_failure * spectrum_e0.multiplicities[d];
+        e0_spec_total[d] += 1 * spectrum_e0.multiplicities[d];
+      }
+    }
 
     // Check magic numbers (memory overflow) 
     CHECK_MAGIC(sk);
@@ -95,11 +182,14 @@ int main(int argc, char *argv[])
     CHECK_MAGIC(ct);
     CHECK_MAGIC(k_enc);
     CHECK_MAGIC(k_dec);
+  }
 
-    // print("Initiator's generated key (K) of 256 bits = ", (uint64_t *)k_enc.val,
-    //       SIZEOF_BITS(k_enc.val));
-    // print("Responder's computed key (K) of 256 bits  = ", (uint64_t *)k_dec.val,
-    //       SIZEOF_BITS(k_enc.val));
+  // Print key spec and the estimators
+  printf("distance,spec_h0,spec_e0_estimator\n");
+  for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
+    printf("%d,", d);
+    printf("%d,", spectrum_h0.multiplicities[d]);
+    printf("%.4lf\n", 1 - (double) e0_spec_fails[d] / e0_spec_total[d]);
   }
 
   return 0;

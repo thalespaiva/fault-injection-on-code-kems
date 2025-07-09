@@ -3,7 +3,7 @@
 
 target_sources(${PROJECT_NAME}
   PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/kem.c
+    ${CMAKE_CURRENT_LIST_DIR}/fia_kem.c
 )
 
 add_subdirectory(common)

@@ -277,8 +277,8 @@ void decode(OUT e_t *e, IN const ct_t *ct, IN const sk_t *sk)
   for(uint32_t iter = 0; iter < MAX_IT; iter++) {
     const uint8_t threshold = get_threshold(&s);
     if (FIA_CURRENT_BGF_ITERATION == FIA_FAULT_ON_BGF_ITERATION) {
-      int synd_weight = r_bits_vector_weight((r_t *)s.qw);
-      printf("%d,", synd_weight);
+      // int synd_weight = r_bits_vector_weight((r_t *)s.qw);
+      // printf("%d,", synd_weight);
     }
     FIA_CURRENT_BGF_ITERATION++;
 
