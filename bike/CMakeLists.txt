@@ -13,19 +13,19 @@ include(cmake/compilation-flags.cmake)
 include(cmake/clang-format.cmake)
 
 add_library(${PROJECT_NAME} "")
-add_executable(bike-test "")
+# add_executable(bike-test "")
 add_executable(bike-fia-simulation "")
 
 add_subdirectory(${SRC_DIR})
 add_subdirectory(${TESTS_DIR})
 
-target_link_libraries(bike-test ${PROJECT_NAME})
+# target_link_libraries(bike-test ${PROJECT_NAME})
 target_link_libraries(bike-fia-simulation ${PROJECT_NAME})
 
 if(LINK_OPENSSL)
   message(STATUS "Linking OpenSSL")
   find_package(OpenSSL REQUIRED)
   set(OPENSSL_USE_STATIC_LIBS TRUE)
-  target_link_libraries(bike-test OpenSSL::Crypto)
+  # target_link_libraries(bike-test OpenSSL::Crypto)
   target_link_libraries(bike-fia-simulation OpenSSL::Crypto)
 endif()
