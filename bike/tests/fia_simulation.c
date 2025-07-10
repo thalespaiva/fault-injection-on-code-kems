@@ -102,9 +102,8 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in, IN const 
   }
 }
 
-////////////////////////////////////////////////////////////////
-//                 Main function for testing
-////////////////////////////////////////////////////////////////
+#define CHECKPOINT_STEP 500000
+
 int main(int argc, char *argv[])
 {
 
@@ -136,9 +135,18 @@ int main(int argc, char *argv[])
   r_spectrum_t spectrum_h0 = {0};
   get_r_spectrum(&spectrum_h0, (const uint64_t *)global_h0.val.raw, R_BITS);
 
+  r_spectrum_t spectrum_h1 = {0};
+  get_r_spectrum(&spectrum_h1, (const uint64_t *)global_h1.val.raw, R_BITS);
+
   // The vectors used to estimate the likelihood that a distance is in the spectrum of `h0`
   uint32_t e0_spec_fails[R_SPECTRUM_SIZE] = {0};
   uint32_t e0_spec_total[R_SPECTRUM_SIZE] = {0};
+
+  // The vectors used to estimate the likelihood that a distance is in the spectrum of `h1`
+  uint32_t e1_spec_fails[R_SPECTRUM_SIZE] = {0};
+  uint32_t e1_spec_total[R_SPECTRUM_SIZE] = {0};
+
+  printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
 
   for(size_t i = 1; i <= n_decaps; ++i) {
 
@@ -152,6 +160,9 @@ int main(int argc, char *argv[])
     // reencryption procedure
     r_spectrum_t spectrum_e0 = {0};
     get_r_spectrum(&spectrum_e0, (const uint64_t *)PE0_RAW(&global_e), R_BITS);
+
+    r_spectrum_t spectrum_e1 = {0};
+    get_r_spectrum(&spectrum_e1, (const uint64_t *)PE1_RAW(&global_e), R_BITS);
 
     // Decapsulate
     dec_rc = crypto_kem_dec(k_dec.val, ct.val, sk.val);
@@ -174,6 +185,22 @@ int main(int argc, char *argv[])
         e0_spec_fails[d] += decaps_failure * spectrum_e0.multiplicities[d];
         e0_spec_total[d] += 1 * spectrum_e0.multiplicities[d];
       }
+      if (spectrum_e1.multiplicities[d]) {
+        e1_spec_fails[d] += decaps_failure * spectrum_e1.multiplicities[d];
+        e1_spec_total[d] += 1 * spectrum_e1.multiplicities[d];
+      }
+    }
+
+    if (i % CHECKPOINT_STEP == 0 && i != n_decaps) {
+      // Print key spec and the estimators
+      for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
+        printf("%ld,", i);
+        printf("%d,", d);
+        printf("%d,", spectrum_h0.multiplicities[d]);
+        printf("%.4lf,", (double) e0_spec_fails[d] / e0_spec_total[d]);
+        printf("%d,", spectrum_h1.multiplicities[d]);
+        printf("%.4lf\n", (double) e1_spec_fails[d] / e1_spec_total[d]);
+      }
     }
 
     // Check magic numbers (memory overflow) 
@@ -185,11 +212,14 @@ int main(int argc, char *argv[])
   }
 
   // Print key spec and the estimators
-  printf("distance,spec_h0,spec_e0_estimator\n");
+  // printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
   for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
+    printf("%ld,", n_decaps);
     printf("%d,", d);
     printf("%d,", spectrum_h0.multiplicities[d]);
-    printf("%.4lf\n", 1 - (double) e0_spec_fails[d] / e0_spec_total[d]);
+    printf("%.4lf,", (double) e0_spec_fails[d] / e0_spec_total[d]);
+    printf("%d,", spectrum_h1.multiplicities[d]);
+    printf("%.4lf\n", (double) e1_spec_fails[d] / e1_spec_total[d]);
   }
 
   return 0;
