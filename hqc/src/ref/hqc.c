@@ -181,9 +181,9 @@ uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke
     // Inject ALL ONES FAULT
     ciphertext_pke_t fia_c_pke;
     memcpy(&fia_c_pke, c_pke, sizeof(*c_pke));
-    int n_faulted_blocks = 1;
+    int n_faulted_blocks = 2;
     for (int i = 0; i < n_faulted_blocks; i++)
-        fia_c_pke.u[0] = -1;
+        fia_c_pke.u[i] = rand();
 
     // Compute u.y
     // vect_mul(tmp1, y, c_pke->u); // Original code without fault

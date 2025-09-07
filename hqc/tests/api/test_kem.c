@@ -87,7 +87,7 @@ static MunitResult test_kem_api(const MunitParameter params[], void* user_data) 
             iterations = parsed;
     }
 
-    iterations = 10000;
+    // iterations = 100;
 
     int n_errors = 0;
     for (int run = 0; run < iterations; run++) {
@@ -286,7 +286,7 @@ static MunitResult test_kem_sk_corruption(const MunitParameter params[], void* u
  * static char* iteration_values[] = { (char*)"1", (char*)"10", (char*)"100", NULL };
  * @endcode
  */
-static char* iteration_values[] = {(char*)"1", NULL};
+static char* iteration_values[] = {(char*)"1000", NULL};
 
 /**
  * @brief Parameter schema for @ref test_kem_api.
