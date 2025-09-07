@@ -167,6 +167,9 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
  * @return Returns 0 on success.
  *
  */
+
+#include <string.h>
+
 uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke_t *c_pke) {
     uint64_t y[VEC_N_SIZE_64] = {0};
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
@@ -175,8 +178,17 @@ uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke
     // Parse decryption key dk_pke
     hqc_dk_pke_from_string(y, dk_pke);
 
+    // Inject ALL ONES FAULT
+    ciphertext_pke_t fia_c_pke;
+    memcpy(&fia_c_pke, c_pke, sizeof(*c_pke));
+    int n_faulted_blocks = 1;
+    for (int i = 0; i < n_faulted_blocks; i++)
+        fia_c_pke.u[0] = -1;
+
     // Compute u.y
-    vect_mul(tmp1, y, c_pke->u);
+    // vect_mul(tmp1, y, c_pke->u); // Original code without fault
+    vect_mul(tmp1, y, fia_c_pke.u);
+
     // Truncate(u.y)
     vect_truncate(tmp1);
     // Compute v - Truncate(u.y)

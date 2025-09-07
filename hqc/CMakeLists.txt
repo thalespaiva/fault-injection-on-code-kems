@@ -90,7 +90,8 @@ add_compile_options(${HQC_C_FLAGS})
 # -----------------------------------------------------------------------------
 # BUILD SUBDIRECTORIES
 # -----------------------------------------------------------------------------
-set(VARIANTS hqc-1 hqc-3 hqc-5)
+# set(VARIANTS hqc-1 hqc-3 hqc-5)
+set(VARIANTS hqc-1)
 
 add_subdirectory(lib)
 add_subdirectory(src)
