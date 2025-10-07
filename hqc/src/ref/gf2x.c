@@ -16,6 +16,8 @@
 #include <string.h>
 #include "parameters.h"
 
+int FAULT = 0;
+
 /** @def KARATSUBA_THRESHOLD
  *  @brief Input size (in words) below which schoolbook_mul is used.
  */
@@ -36,6 +38,10 @@
  * @param[in]  b  Operand b, size n words.
  * @param[in]  n  Number of 64-bit words in a and b.
  */
+
+int MAX_FAULTS = 1;
+int N_FAULTS = 0;
+
 static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
     memset(r, 0, 2 * n * sizeof(uint64_t));
     for (size_t i = 0; i < n; i++) {
@@ -105,10 +111,15 @@ static void karatsuba_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, siz
         uint64_t loa = (i < n0 ? a[i] : 0);
         uint64_t lob = (i < n0 ? b[i] : 0);
         ta[i] = loa ^ a[m + i];
-        tb[i] = lob ^ b[m + i];
+        if (FAULT && (N_FAULTS++ < MAX_FAULTS)) {
+            tb[i] = lob;
+        }
+        else {
+            tb[i] = lob ^ b[m + i];
+        }
     }
-    karatsuba_mul(zmid, ta, tb, n1, child_buffer);
 
+    karatsuba_mul(zmid, ta, tb, n1, child_buffer);
     /* 4) assemble into r */
     memset(r, 0, 2 * n * sizeof(uint64_t));
     for (size_t i = 0; i < 2 * n0; i++) r[i] ^= z0[i];
@@ -148,7 +159,10 @@ static void reduce(uint64_t *o, const uint64_t *a) {
  * @param[in]  a1  Operand polynomial a(x).
  * @param[in]  a2  Operand polynomial b(x).
  */
+
 void vect_mul(uint64_t *o, const uint64_t *a1, const uint64_t *a2) {
+    N_FAULTS = 0;
+
     uint64_t unreduced[2 * VEC_N_SIZE_64];
     uint64_t tmp_buffer[TMP_BUFFER_WORDS];
 

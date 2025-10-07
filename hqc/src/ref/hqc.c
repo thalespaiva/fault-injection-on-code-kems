@@ -169,6 +169,7 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
  */
 
 #include <string.h>
+extern int FAULT;
 
 uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke_t *c_pke) {
     uint64_t y[VEC_N_SIZE_64] = {0};
@@ -178,16 +179,10 @@ uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke
     // Parse decryption key dk_pke
     hqc_dk_pke_from_string(y, dk_pke);
 
-    // Inject ALL ONES FAULT
-    ciphertext_pke_t fia_c_pke;
-    memcpy(&fia_c_pke, c_pke, sizeof(*c_pke));
-    int n_faulted_blocks = 2;
-    for (int i = 0; i < n_faulted_blocks; i++)
-        fia_c_pke.u[i] = rand();
-
     // Compute u.y
-    // vect_mul(tmp1, y, c_pke->u); // Original code without fault
-    vect_mul(tmp1, y, fia_c_pke.u);
+    FAULT = 1;
+    vect_mul(tmp1, y, c_pke->u); // Original code without fault
+    FAULT = 0;
 
     // Truncate(u.y)
     vect_truncate(tmp1);
