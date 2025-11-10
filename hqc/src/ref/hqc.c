@@ -16,6 +16,13 @@
 #include <stdio.h>
 #endif
 
+
+extern uint64_t global_x[VEC_N_SIZE_64];
+extern uint64_t global_y[VEC_N_SIZE_64];
+
+extern uint64_t global_r1[VEC_N_SIZE_64];
+extern uint64_t global_r2[VEC_N_SIZE_64];
+
 /**
  * @brief Generates a key pair for the HQC public-key encryption (PKE) scheme.
  *
@@ -46,6 +53,9 @@ void hqc_pke_keygen(uint8_t *ek_pke, uint8_t *dk_pke, uint8_t *seed) {
     xof_init(&dk_xof_ctx, seed_dk, SEED_BYTES);
     vect_sample_fixed_weight1(&dk_xof_ctx, y, PARAM_OMEGA);
     vect_sample_fixed_weight1(&dk_xof_ctx, x, PARAM_OMEGA);
+
+    memcpy(global_x, x, VEC_N_SIZE_BYTES);
+    memcpy(global_y, y, VEC_N_SIZE_BYTES);
 
     // Compute encryption key
     xof_init(&ek_xof_ctx, seed_ek, SEED_BYTES);
@@ -113,6 +123,10 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
     vect_sample_fixed_weight2(&theta_xof_ctx, r2, PARAM_OMEGA_R);
     vect_sample_fixed_weight2(&theta_xof_ctx, e, PARAM_OMEGA_E);
     vect_sample_fixed_weight2(&theta_xof_ctx, r1, PARAM_OMEGA_R);
+
+
+    memcpy(global_r1, r1, VEC_N_SIZE_BYTES);
+    memcpy(global_r2, r2, VEC_N_SIZE_BYTES);
 
     // Compute u = r1 + r2.h
     vect_mul(c_pke->u, r2, h);
@@ -191,7 +205,7 @@ uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke
 
 #ifdef VERBOSE
     printf("\n\nc_pke.u: ");
-    vect_print(c_pke->u, VEC_N_SIZE_BYTES);
+    (c_pke->u, VEC_N_SIZE_BYTES);
     printf("\n\nc_pke.v: ");
     vect_print(c_pke->v, VEC_N1N2_SIZE_BYTES);
     printf("\n\ny: ");

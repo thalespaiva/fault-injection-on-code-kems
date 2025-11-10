@@ -4,3 +4,4 @@ project(FIAOnCodeBasedSchemes)
 
 add_subdirectory(bike)
 add_subdirectory(key_recovery)
+add_subdirectory(hqc)

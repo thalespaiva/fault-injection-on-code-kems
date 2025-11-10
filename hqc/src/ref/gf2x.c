@@ -39,7 +39,7 @@ int FAULT = 0;
  * @param[in]  n  Number of 64-bit words in a and b.
  */
 
-int MAX_FAULTS = 1;
+int MAX_FAULTS = 2;
 int N_FAULTS = 0;
 
 static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
@@ -53,10 +53,17 @@ static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, si
             int inv = 64 - sh;
             if (sh == 0) {
                 for (size_t j = 0; j < n; j++) {
-                    r[base + j] ^= b[j] & mask;
+                    if (FAULT && (N_FAULTS == 0)) {
+                        N_FAULTS++;
+                        r[base + j] ^= b[j];
+                    }
+                    else {
+                        r[base + j] ^= b[j] & mask;
+                    }
                 }
             } else {
                 for (size_t j = 0; j < n; j++) {
+
                     r[base + j] ^= (b[j] << sh) & mask;
                     r[base + j + 1] ^= (b[j] >> inv) & mask;
                 }
@@ -111,7 +118,9 @@ static void karatsuba_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, siz
         uint64_t loa = (i < n0 ? a[i] : 0);
         uint64_t lob = (i < n0 ? b[i] : 0);
         ta[i] = loa ^ a[m + i];
-        if (FAULT && (N_FAULTS++ < MAX_FAULTS)) {
+        // if (FAULT && (N_FAULTS++ < MAX_FAULTS)) {
+        if (FAULT && (N_FAULTS == 1)) {
+            N_FAULTS++;
             tb[i] = lob;
         }
         else {

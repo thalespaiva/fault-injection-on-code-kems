@@ -63,6 +63,10 @@ else()
     list(APPEND HQC_C_FLAGS -O3)
 endif()
 
+list(APPEND HQC_C_FLAGS "-march=native")
+
+message("${HQC_C_FLAGS}")
+
 set(HQC_SANITIZER "NONE" CACHE STRING "Select a sanitizer: NONE, ASAN, LSAN, MSAN, UBSAN")
 mark_as_advanced(HQC_SANITIZER)
 option(CLANG_FORMAT_ARCH "" "If non-empty, only format files under src/<this>; e.g. ref or x86_64")
@@ -95,7 +99,8 @@ set(VARIANTS hqc-1)
 
 add_subdirectory(lib)
 add_subdirectory(src)
-add_subdirectory(tests)
+# add_subdirectory(tests)
+add_subdirectory(fia_simulation)
 
 # -----------------------------------------------------------------------------
 # FORMAT, STATIC ANALYSIS, PACKAGING
