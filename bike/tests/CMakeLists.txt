@@ -19,6 +19,15 @@ if(USE_NIST_RAND)
       
       ${HEADERS}
   )
+
+  target_sources(gen-hw-s-plot-data
+    PRIVATE
+      ${CMAKE_CURRENT_LIST_DIR}/FromNIST/rng.c
+      ${CMAKE_CURRENT_LIST_DIR}/FromNIST/PQCgenKAT_kem.c
+
+      ${HEADERS}
+  )
+
 else()
   # target_sources(bike-test
     # PRIVATE
@@ -29,4 +38,11 @@ else()
     PRIVATE
       ${CMAKE_CURRENT_LIST_DIR}/fia_simulation.c
   )
+
+  target_sources(gen-hw-s-plot-data
+    PRIVATE
+      ${CMAKE_CURRENT_LIST_DIR}/gen_hw_s_plot_data.c
+  )
+
+
 endif()

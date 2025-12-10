@@ -40,9 +40,10 @@
 #include "gf2x.h"
 #include "utilities.h"
 
-#define FIA_FAULT_ON_BGF_ITERATION 2  // The iteration where the fault will be applied.
+extern int FIA_FAULT_ON_BGF_ITERATION; // The iteration where the fault will be applied.
 int FIA_CURRENT_BGF_ITERATION = -1;  // Globally stores the current BGF iteration so that `get_threshold` can see it.
 
+extern int global_synd_weight;
 
 // Decoding (bit-flipping) parameter
 #if defined(BG_DECODER)
@@ -278,6 +279,7 @@ void decode(OUT e_t *e, IN const ct_t *ct, IN const sk_t *sk)
     const uint8_t threshold = get_threshold(&s);
     if (FIA_CURRENT_BGF_ITERATION == FIA_FAULT_ON_BGF_ITERATION) {
       // int synd_weight = r_bits_vector_weight((r_t *)s.qw);
+      global_synd_weight = r_bits_vector_weight((r_t *)s.qw);
       // printf("%d,", synd_weight);
     }
     FIA_CURRENT_BGF_ITERATION++;

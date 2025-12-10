@@ -15,12 +15,14 @@ include(cmake/clang-format.cmake)
 add_library(${PROJECT_NAME} "")
 # add_executable(bike-test "")
 add_executable(bike-fia-simulation "")
+add_executable(gen-hw-s-plot-data "")
 
 add_subdirectory(${SRC_DIR})
 add_subdirectory(${TESTS_DIR})
 
 # target_link_libraries(bike-test ${PROJECT_NAME})
 target_link_libraries(bike-fia-simulation ${PROJECT_NAME})
+target_link_libraries(gen-hw-s-plot-data ${PROJECT_NAME})
 
 if(LINK_OPENSSL)
   message(STATUS "Linking OpenSSL")

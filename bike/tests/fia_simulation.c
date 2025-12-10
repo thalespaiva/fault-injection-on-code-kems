@@ -21,6 +21,7 @@
 // BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
 
 pad_e_t global_e = {0};
+int FIA_FAULT_ON_BGF_ITERATION = 2;
 
 // END ATTACKER VARIABLES =========================================================================
 
@@ -29,6 +30,8 @@ pad_e_t global_e = {0};
 
 pad_r_t global_h0 = {0};
 pad_r_t global_h1 = {0};
+
+int global_synd_weight = 0;
 
 // END SECRET VARIABLES ===========================================================================
 
