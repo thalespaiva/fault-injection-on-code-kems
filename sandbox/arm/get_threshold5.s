@@ -1,10 +1,10 @@
 .syntax unified
 .cpu cortex-a8
 .arm
-.global get_threshold
-.type get_threshold, %function
+.global get_threshold5
+.type get_threshold5, %function
 
-get_threshold:
+get_threshold5:
         ldr     ip, .L4
         umull   r0, r3, ip, r0
         push    {r4, lr}

@@ -28,9 +28,10 @@ get_threshold:
         and     r0, r0, #255
         pop     {r4, lr}
         bx      lr
-
 .L4:
         .word   526500
         .word   1525880000
         .word   -1412663535
         .word   -2073964803
+
+.section .note.GNU-stack,"",%progbits
