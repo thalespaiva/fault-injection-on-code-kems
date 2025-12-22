@@ -22,8 +22,12 @@ get_threshold1:
         orr     r3, r3, r0, lsl #6
         subs    r2, r3, #36
         sbc     r0, r0, r0
+#ifndef FAULT_A
         bic     r3, r3, r0
+#endif
+#ifndef FAULT_B
         and     r0, r0, #36
+#endif
         orr     r0, r0, r3
         and     r0, r0, #255
         pop     {r4, lr}

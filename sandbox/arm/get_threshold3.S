@@ -25,11 +25,11 @@ get_threshold3:
 #ifndef FAULT_A
         bic     r3, r3, r0
 #endif
-        and     r0, r0, #52
-        orr     r0, r0, r3
 #ifndef FAULT_B
-        and     r0, r0, #255
+        and     r0, r0, #52
 #endif
+        orr     r0, r0, r3
+        and     r0, r0, #255
         pop     {r4, lr}
         bx      lr
 .L4:
