@@ -144,15 +144,6 @@ int main(int argc, char *argv[])
       // Encapsulate
       assert(crypto_kem_enc(ct.val, k_enc.val, pk.val) == 0);
 
-      // IMPORTANT: this should be made before decryption, otherwise `crypto_kem_dec` can
-      // overwrite `global_e` with an invalid value (in case of decoding error), during the
-      // reencryption procedure
-      r_spectrum_t spectrum_e0 = {0};
-      get_r_spectrum(&spectrum_e0, (const uint64_t *)PE0_RAW(&global_e), R_BITS);
-
-      r_spectrum_t spectrum_e1 = {0};
-      get_r_spectrum(&spectrum_e1, (const uint64_t *)PE1_RAW(&global_e), R_BITS);
-
       // Decapsulate
       dec_rc = crypto_kem_dec(k_dec.val, ct.val, sk.val);
 
