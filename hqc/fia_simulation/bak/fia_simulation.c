@@ -1,0 +1,321 @@
+#define _DEFAULT_SOURCE
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/syscall.h>
+#include <time.h>
+#include <unistd.h>
+#include "api.h"
+#include "parameters.h"
+#include "symmetric.h"
+
+#define IN
+#define OUT
+
+// #define CHECKPOINT_STEP 500000
+// #define CHECKPOINT_STEP 100000
+// #define CHECKPOINT_STEP 50000
+#define CHECKPOINT_STEP 100
+
+#define R_SPECTRUM_SIZE (PARAM_N / 2) + 1
+
+// The spectrum of `r`-bit vectors
+typedef struct r_spectrum_s {
+  uint32_t multiplicities[R_SPECTRUM_SIZE];
+} r_spectrum_t;
+
+// static void vect_print(const uint64_t *v, const uint32_t size);
+void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num);
+int get_distance(int pos1, int pos2, int length);
+void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in);
+
+
+// BEGIN SECRET VARIABLES -- NOT KNOWN TO THE FIA ATTACKER ========================================
+uint64_t global_x[VEC_N_SIZE_64] = {0};
+uint64_t global_y[VEC_N_SIZE_64] = {0};
+// END SECRET VARIABLES ===========================================================================
+
+
+// BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
+uint64_t global_r1[VEC_N_SIZE_64] = {0};
+uint64_t global_r2[VEC_N_SIZE_64] = {0};
+// END ATTACKER VARIABLES =========================================================================
+
+
+
+
+void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num) {
+  for (uint32_t i = 0; i < bits_num; i++) {
+    if ((in[i / 64] >> (i % 64)) & 1) {
+      printf("%d, ", i);
+    }
+  }
+  printf("\n");
+}
+
+// Circular distance between `pos1` and `pos2` in a (circular) vector of size `length`.
+int get_distance(int pos1, int pos2, int length) {
+    int dist1, dist2;
+
+    dist1 = abs(pos2 - pos1);
+    dist2 = length - dist1;
+    if (dist1 <= dist2)
+        return dist1;
+    return dist2;
+}
+
+// Computes the spectrum of an `r`-bit vector.
+// The `bits_num` parameter should be always equals to `PARAM_N` -- this parameter should be removed
+// in the near future, it was here just for previous compatibility that is not needed.
+void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in) {
+  uint32_t support[PARAM_N] = {0};
+
+  uint32_t n_support = 0;
+  for (uint32_t i = 0; i < PARAM_N; i++) {
+    if ((in[i / 64] >> (i % 64)) & 1) {
+      support[n_support++] = i;
+    }
+  }
+
+  memset(spectrum->multiplicities, 0, R_SPECTRUM_SIZE * sizeof(*spectrum->multiplicities));
+  for (uint32_t i = 0; i < n_support; i++) {
+    for (uint32_t j = i + 1; j < n_support; j++) {
+      uint32_t distance = get_distance(support[i], support[j], PARAM_N);
+      spectrum->multiplicities[distance] += 1;
+    }
+  }
+}
+
+// int master_weights[PARAM_N1] = {
+//     11, 52, 67, 0, 70, 49, 0, 70, 49, 11, 60, 48, 11, 60, 48,
+//     31, 55, 33, 52, 56, 11, 52, 56, 11, 52, 67, 0, 70, 49, 0,
+//     70, 49, 11, 60, 48, 11, 60, 48, 31, 55, 33, 52, 56, 11, 52, 56
+// };
+
+// int master_weights[PARAM_N1] = {
+//     48, 48, 16, 32, 48, 32, 16, 48, 48, 16, 32, 48, 16, 32, 48, 32, 16, 48,
+//     48, 0, 48, 48, 0, 48, 48, 16, 32, 48, 32, 16, 48, 48, 16, 32, 48, 16,
+//     32, 48, 32, 16, 48, 48, 0, 48, 48, 0
+// };
+
+int master_weights[PARAM_N1] = {
+    0, 48, 16, 32, 48, 32, 16, 48, 48, 16, 32, 48, 16, 32, 48, 32, 16, 48,
+    48, 100, 48, 48, 100, 48, 48, 16, 32, 48, 32, 16, 48, 48, 16, 32, 48, 16,
+    32, 48, 32, 16, 48, 48, 100, 48, 48, 100
+};
+
+
+void update_likelihoods(uint32_t likelihoods[PARAM_N],
+                        uint64_t r[VEC_N_SIZE_64],
+                        int32_t decaps_failure);
+
+void update_likelihoods(uint32_t likelihoods[PARAM_N],
+                        uint64_t r[VEC_N_SIZE_64],
+                        int32_t decaps_failure) {
+    size_t r_support[PARAM_OMEGA_R] = {0};
+    size_t n_r_support = 0;
+
+    for (int i = 0; i < PARAM_N; i++) {
+        if ((r[i / 64] >> (i % 64)) & 1) {
+            r_support[n_r_support++] = i;
+        }
+    }
+
+    for (int shift = 0; shift < PARAM_N; shift++) {
+        for (int i = 0; i < PARAM_OMEGA_R; i++) {
+            int r_shift = (r_support[i] + shift) % PARAM_N;
+
+            // `r_shift` iterates over `supp(r >> shift)`
+
+            // In this case, r_shift is in the padding, so no there is no corresponding RM block
+            if (r_shift >= PARAM_N1N2) {
+                continue;
+            }
+
+            // if (r_shift/PARAM_N2 not in xxx)
+                // continue;
+
+            // likelihoods[shift] += decaps_failure * (master_weights[r_shift / PARAM_N2] == 0);
+            likelihoods[shift] += decaps_failure * (r_shift <= 150*64);
+        }
+    }
+}
+
+
+int main(int argc, char *argv[]) {
+
+    if (argc != 2) {
+        printf("Usage: %s <n_decaps>\n", argv[0]);
+        exit(1);
+    }
+
+
+    long n_decaps = atol(argv[1]);
+    // long n_errors = 0;
+
+    unsigned char pk[PUBLIC_KEY_BYTES];
+    unsigned char sk[SECRET_KEY_BYTES];
+    unsigned char ct[CIPHERTEXT_BYTES];
+    unsigned char ss1[SHARED_SECRET_BYTES];
+    unsigned char ss2[SHARED_SECRET_BYTES];
+
+    unsigned char seed[48] = {0};
+    // syscall(SYS_getrandom, seed, 48, 0);
+    for (int i = 0; i < 48; i++) {
+        seed[i] = i;
+    }
+    prng_init(seed, NULL, 48, 0);
+
+    crypto_kem_keypair(pk, sk);
+
+
+    uint32_t likelihoods_y[PARAM_N] = {0};
+    uint32_t likelihoods_x[PARAM_N] = {0};
+
+    printf("n_challenges,index,x,likelihoods_x,y,likelihoods_y\n");
+    for (long i = 1; i <= n_decaps; i++) {
+        crypto_kem_enc(ct, ss1, pk);
+
+        uint64_t r1_copy[VEC_N_SIZE_64] = {0};
+        uint64_t r2_copy[VEC_N_SIZE_64] = {0};
+
+        memcpy(r1_copy, global_r1, VEC_N_SIZE_64 * 8);
+        memcpy(r2_copy, global_r2, VEC_N_SIZE_64 * 8);
+
+        crypto_kem_dec(ss2, ct, sk);
+
+
+
+        // Check test status
+        int decaps_failure = 0;
+        if (memcmp(ss1, ss2, SHARED_SECRET_BYTES)) {
+            decaps_failure = 1;
+        }
+
+        update_likelihoods(likelihoods_y, r1_copy, decaps_failure);
+        update_likelihoods(likelihoods_x, r2_copy, decaps_failure);
+
+
+        // uint32_t unknown2[PARAM_N] = {0};
+        // uint32_t zeros1[PARAM_N] = {0};
+
+        // get_unknown2_and_zeros1_for_same_threshold(unknown2, &n_unknown2, zeros1, &n_zeros1,
+        //                                            likelihoods_x, likelihoods_y, sk);
+
+
+        fprintf(stderr, "(%d) ", decaps_failure);
+        // printf("--> %d\n", decaps_failure);
+        // if(decaps_failure) exit(1);
+        if (i % CHECKPOINT_STEP == 0 && i != n_decaps) {
+            // Print key spec and the estimators
+            for (int d = 0; d < PARAM_N; d++) {
+                printf("%ld,", i);
+                printf("%d,", d);
+                printf("%ld,", (global_x[d / 64] >> (d % 64)) & 1);
+                printf("%d,", likelihoods_x[d]);
+                printf("%ld,", (global_y[d / 64] >> (d % 64)) & 1);
+                printf("%d\n", likelihoods_y[d]);
+            }
+            fflush(stdout);
+        }
+    }
+
+    return 0;
+}
+
+
+/*
+int main2(int argc, char *argv[]) {
+
+    if (argc != 2) {
+        printf("Usage: %s <n_decaps>\n", argv[0]);
+        exit(1);
+    }
+
+    long n_decaps = atol(argv[1]);
+    // long n_errors = 0;
+
+    unsigned char pk[PUBLIC_KEY_BYTES];
+    unsigned char sk[SECRET_KEY_BYTES];
+    unsigned char ct[CIPHERTEXT_BYTES];
+    unsigned char ss1[SHARED_SECRET_BYTES];
+    unsigned char ss2[SHARED_SECRET_BYTES];
+
+    unsigned char seed[48] = {0};
+    // syscall(SYS_getrandom, seed, 48, 0);
+    for (int i = 0; i < 48; i++) {
+        seed[i] = i;
+    }
+    prng_init(seed, NULL, 48, 0);
+
+    crypto_kem_keypair(pk, sk);
+
+    r_spectrum_t spectrum_x = {0};
+    get_r_spectrum(&spectrum_x, global_x);
+
+    r_spectrum_t spectrum_y = {0};
+    get_r_spectrum(&spectrum_y, global_y);
+
+    // The vectors used to estimate the likelihood that a distance is in the spectrum of `x`
+    uint32_t r2_spec_fails[R_SPECTRUM_SIZE] = {0};
+    uint32_t r2_spec_total[R_SPECTRUM_SIZE] = {0};
+
+    // The vectors used to estimate the likelihood that a distance is in the spectrum of `y`
+    uint32_t r1_spec_fails[R_SPECTRUM_SIZE] = {0};
+    uint32_t r1_spec_total[R_SPECTRUM_SIZE] = {0};
+
+    printf("n_challenges,distance,spec_x,spec_r2_estimator,spec_y,spec_r1_estimator\n");
+
+
+    for (long i = 1; i <= n_decaps; i++) {
+        crypto_kem_enc(ct, ss1, pk);
+
+        // IMPORTANT: this should be made before decryption, otherwise `crypto_kem_dec` can
+        // overwrite `global_r1,r2` with an invalid value.
+        r_spectrum_t spectrum_r2 = {0};
+        get_r_spectrum(&spectrum_r2, global_r2);
+
+        r_spectrum_t spectrum_r1 = {0};
+        get_r_spectrum(&spectrum_r1, global_r1);
+
+        crypto_kem_dec(ss2, ct, sk);
+        // Decapsulate
+        // dec_rc = crypto_kem_dec(k_dec.val, ct.val, sk.val);
+
+        // Check test status
+        int decaps_failure = 0;
+        if (memcmp(ss1, ss2, SHARED_SECRET_BYTES)) {
+            decaps_failure = 1;
+        }
+
+        for (int d = 0; d < R_SPECTRUM_SIZE; d++) {
+            if (spectrum_r2.multiplicities[d]) {
+                r2_spec_fails[d] += decaps_failure * spectrum_r2.multiplicities[d];
+                r2_spec_total[d] += spectrum_r2.multiplicities[d];
+            }
+            if (spectrum_r1.multiplicities[d]) {
+                r1_spec_fails[d] += decaps_failure * spectrum_r1.multiplicities[d];
+                r1_spec_total[d] += spectrum_r1.multiplicities[d];
+            }
+        }
+        printf("--> %d\n", decaps_failure);
+        // if(decaps_failure) exit(1);
+        if (i % CHECKPOINT_STEP == 0 && i != n_decaps) {
+            // Print key spec and the estimators
+            for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
+                printf("%ld,", i);
+                printf("%d,", d);
+                printf("%d,", spectrum_x.multiplicities[d]);
+                printf("%.4lf,", (double) r2_spec_fails[d] / r2_spec_total[d]);
+                printf("%d,", spectrum_y.multiplicities[d]);
+                printf("%.4lf\n", (double) r1_spec_fails[d] / r1_spec_total[d]);
+            }
+            fflush(stdout);
+        }
+    }
+
+    return 0;
+}
+
+*/

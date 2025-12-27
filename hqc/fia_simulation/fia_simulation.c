@@ -30,17 +30,19 @@ int get_distance(int pos1, int pos2, int length);
 void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in);
 
 
+
 // BEGIN SECRET VARIABLES -- NOT KNOWN TO THE FIA ATTACKER ========================================
 uint64_t global_x[VEC_N_SIZE_64] = {0};
 uint64_t global_y[VEC_N_SIZE_64] = {0};
+uint64_t global_noise_hw[VEC_N_SIZE_64] = {0};
 // END SECRET VARIABLES ===========================================================================
 
 
 // BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
 uint64_t global_r1[VEC_N_SIZE_64] = {0};
 uint64_t global_r2[VEC_N_SIZE_64] = {0};
+uint64_t global_e[VEC_N_SIZE_64] = {0};
 // END ATTACKER VARIABLES =========================================================================
-
 
 
 
