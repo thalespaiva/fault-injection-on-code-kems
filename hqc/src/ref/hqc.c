@@ -16,12 +16,18 @@
 #include <stdio.h>
 #endif
 
+#include <stdio.h>
+#include <inttypes.h>
+
 
 extern uint64_t global_x[VEC_N_SIZE_64];
 extern uint64_t global_y[VEC_N_SIZE_64];
+extern uint64_t global_noise_hw[VEC_N_SIZE_64];
 
 extern uint64_t global_r1[VEC_N_SIZE_64];
 extern uint64_t global_r2[VEC_N_SIZE_64];
+extern uint64_t global_e[VEC_N_SIZE_64];
+
 
 /**
  * @brief Generates a key pair for the HQC public-key encryption (PKE) scheme.
@@ -127,6 +133,7 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
 
     memcpy(global_r1, r1, VEC_N_SIZE_BYTES);
     memcpy(global_r2, r2, VEC_N_SIZE_BYTES);
+    memcpy(global_e, e, VEC_N_SIZE_BYTES);
 
     // Compute u = r1 + r2.h
     vect_mul(c_pke->u, r2, h);
