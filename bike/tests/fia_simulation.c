@@ -20,8 +20,18 @@
 
 // BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
 
-pad_e_t global_e = {0};
+// The iteration where the fault to get_threshold will be added
+#if LEVEL == 1
 int FIA_FAULT_ON_BGF_ITERATION = 2;
+#elif LEVEL == 3
+int FIA_FAULT_ON_BGF_ITERATION = 1;
+#elif LEVEL == 5
+int FIA_FAULT_ON_BGF_ITERATION = 1;
+#else
+#error
+#endif
+
+pad_e_t global_e = {0};
 
 // END ATTACKER VARIABLES =========================================================================
 
@@ -105,7 +115,7 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in, IN const 
   }
 }
 
-#define CHECKPOINT_STEP 500000
+#define CHECKPOINT_STEP 100000
 
 int main(int argc, char *argv[])
 {
@@ -204,6 +214,7 @@ int main(int argc, char *argv[])
         printf("%d,", spectrum_h1.multiplicities[d]);
         printf("%.4lf\n", (double) e1_spec_fails[d] / e1_spec_total[d]);
       }
+      fflush(stdout);
     }
 
     // Check magic numbers (memory overflow) 
