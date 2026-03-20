@@ -16,7 +16,8 @@
 #include <string.h>
 #include "parameters.h"
 
-int FAULT = 0;
+int FAULT_VECT_MUL = 0;
+static int N_FAULTS = 0;
 
 /** @def KARATSUBA_THRESHOLD
  *  @brief Input size (in words) below which schoolbook_mul is used.
@@ -39,8 +40,6 @@ int FAULT = 0;
  * @param[in]  n  Number of 64-bit words in a and b.
  */
 
-int MAX_FAULTS = 2;
-int N_FAULTS = 0;
 
 static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
     memset(r, 0, 2 * n * sizeof(uint64_t));
@@ -53,7 +52,7 @@ static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, si
             int inv = 64 - sh;
             if (sh == 0) {
                 for (size_t j = 0; j < n; j++) {
-                    if (FAULT && (N_FAULTS == 0)) {
+                    if (FAULT_VECT_MUL && (N_FAULTS == 0)) {
                         N_FAULTS++;
                         r[base + j] ^= b[j];
                     }
@@ -118,8 +117,7 @@ static void karatsuba_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, siz
         uint64_t loa = (i < n0 ? a[i] : 0);
         uint64_t lob = (i < n0 ? b[i] : 0);
         ta[i] = loa ^ a[m + i];
-        // if (FAULT && (N_FAULTS++ < MAX_FAULTS)) {
-        if (FAULT && (N_FAULTS == 1)) {
+        if (FAULT_VECT_MUL && (N_FAULTS == 1)) {
             N_FAULTS++;
             tb[i] = lob;
         }

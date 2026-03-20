@@ -9,6 +9,8 @@
 #include <string.h>
 #include "parameters.h"
 
+int FAULT_VECT_ADD;
+
 static inline uint32_t compare_u32(const uint32_t v1, const uint32_t v2);
 
 /**
@@ -220,6 +222,7 @@ void vect_set_random(shake256_xof_ctx *ctx, uint64_t *v) {
  */
 void vect_add(uint64_t *o, const uint64_t *v1, const uint64_t *v2, uint32_t size) {
     for (uint32_t i = 0; i < size; ++i) {
+        if (FAULT_VECT_ADD && (i == size - 93)) break;
         o[i] = v1[i] ^ v2[i];
     }
 }

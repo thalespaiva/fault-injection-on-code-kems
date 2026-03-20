@@ -18,6 +18,18 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
+
+#define FAULT_DECAPS_ON_MULT_U_SK 0       // Karatsuba fault (requires 2 faults per decaps)
+#define FAULT_REENCRYPTION_ON_VEC_ADD 1   // Early break on vect_add during reencryption (requires 1 fault per decaps)
+
+extern int FAULT_VECT_ADD; // Variable (declared in gf2x.c) that triggers fault in vect_add
+extern int FAULT_VECT_MUL; // Variable (declared in vector.c) that triggers fault in vect_mul
+
+// Prevent two faults from being triggered
+#if (FAULT_DECAPS_ON_MULT_U_SK + FAULT_REENCRYPTION_ON_VEC_ADD) > 1
+#error "At most one fault location (FAULT_DECAPS_ON_MULT_U_SK or FAULT_REENCRYPTION_ON_VEC_ADD) can 1"
+#endif
 
 
 extern uint64_t global_x[VEC_N_SIZE_64];
@@ -127,6 +139,7 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
 
     // Generate re, e and r1
     vect_sample_fixed_weight2(&theta_xof_ctx, r2, PARAM_OMEGA_R);
+
     vect_sample_fixed_weight2(&theta_xof_ctx, e, PARAM_OMEGA_E);
     vect_sample_fixed_weight2(&theta_xof_ctx, r1, PARAM_OMEGA_R);
 
@@ -146,7 +159,12 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
     vect_mul(tmp, r2, s);
     vect_add(tmp, e, tmp, VEC_N_SIZE_64);
     vect_truncate(tmp);
-    vect_add(c_pke->v, c_pke->v, tmp, VEC_N1N2_SIZE_64);
+
+    // FIA early return
+    if (FAULT_REENCRYPTION_ON_VEC_ADD) FAULT_VECT_ADD = 1;
+    vect_add(c_pke->v, c_pke->v, tmp, VEC_N1N2_SIZE_64); // v = C.encode(m) + (e + r2 * s)
+    if (FAULT_REENCRYPTION_ON_VEC_ADD) FAULT_VECT_ADD = 0;
+
 
 #ifdef VERBOSE
     printf("\n\nh: ");
@@ -189,9 +207,6 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
  *
  */
 
-#include <string.h>
-extern int FAULT;
-
 uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke_t *c_pke) {
     uint64_t y[VEC_N_SIZE_64] = {0};
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
@@ -201,9 +216,9 @@ uint8_t hqc_pke_decrypt(uint64_t *m, const uint8_t *dk_pke, const ciphertext_pke
     hqc_dk_pke_from_string(y, dk_pke);
 
     // Compute u.y
-    FAULT = 1;
+    if (FAULT_DECAPS_ON_MULT_U_SK) FAULT_VECT_MUL = 1;
     vect_mul(tmp1, y, c_pke->u); // Original code without fault
-    FAULT = 0;
+    if (FAULT_DECAPS_ON_MULT_U_SK) FAULT_VECT_MUL = 0;
 
     // Truncate(u.y)
     vect_truncate(tmp1);
