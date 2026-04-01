@@ -139,16 +139,16 @@ if(CPPCHECK_EXE)
             --enable=all
             --inconclusive
             --suppress=missingIncludeSystem
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             COMMENT "Running cppcheck via compile_commands.json"
             VERBATIM
     )
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/packaging/build_nist_release.sh")
+if(EXISTS "${PROJECT_SOURCE_DIR}/packaging/build_nist_release.sh")
     add_custom_target(package-release
-            COMMAND bash "${CMAKE_SOURCE_DIR}/packaging/build_nist_release.sh"
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            COMMAND bash "${PROJECT_SOURCE_DIR}/packaging/build_nist_release.sh"
+            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
             COMMENT "Assembling NIST Release under packaging/Release"
     )
 endif()
