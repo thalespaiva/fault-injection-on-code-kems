@@ -20,8 +20,9 @@
 
 // BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
 
+int FIA_FAULT_ON_BGF_ITERATION = 0;
 pad_e_t global_e = {0};
-int FIA_FAULT_ON_BGF_ITERATION = 2;
+
 // END ATTACKER VARIABLES =========================================================================
 
 
@@ -134,9 +135,10 @@ int main(int argc, char *argv[])
   // Key generation
   assert(crypto_kem_keypair(pk.val, sk.val) == 0);
 
-  printf("i,bgf_faulted_iteration,global_synd_weight,failed\n");
 
-  for (FIA_FAULT_ON_BGF_ITERATION = 1; FIA_FAULT_ON_BGF_ITERATION <= 5; FIA_FAULT_ON_BGF_ITERATION++) {
+  printf("level,i,bgf_faulted_iteration,global_synd_weight,failed\n");
+
+  for (FIA_FAULT_ON_BGF_ITERATION = 0; FIA_FAULT_ON_BGF_ITERATION <= 5; FIA_FAULT_ON_BGF_ITERATION++) {
     for(size_t i = 1; i <= n_decaps; ++i) {
 
       uint32_t dec_rc = 0;
@@ -159,7 +161,7 @@ int main(int argc, char *argv[])
         }
       }
 
-      printf("%ld,%d,%d,%d\n", i, FIA_FAULT_ON_BGF_ITERATION, global_synd_weight, decaps_failure);
+      printf("%d,%ld,%d,%d,%d\n", LEVEL, i, FIA_FAULT_ON_BGF_ITERATION, global_synd_weight, decaps_failure);
 
       // Check magic numbers (memory overflow)
       CHECK_MAGIC(sk);
