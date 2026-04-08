@@ -1,7 +1,7 @@
 import random
 import tqdm
 from dataclasses import dataclass
-
+import math
 import pandas as pd
 
 def get_spectrum(n, support):
@@ -262,6 +262,59 @@ def test_key_recovery_from_spectrum():
         print("[+] Key found : ) ")
         print("    Support (likely rotated):")
         print("   ", x)
+
+def estimate_good_attack_parameters_for_hqc(n_known_out, n=17669, weight=66, n_tries=100):
+    n_known_in = math.ceil(n_known_out / 3.6)  # Heuristic assumption
+
+    secret_support = random.sample(range(n), weight)
+    secret_spectrum = get_spectrum(n, secret_support)
+
+    all_distances_out = [i for i in range(n//2 + 1) if i not in secret_spectrum]
+    all_distances_in = list(secret_spectrum)
+
+    n_known_out = min(n_known_out, len(all_distances_out))
+    n_known_in = min(n_known_in, len(all_distances_in))
+
+    distances_out = random.sample(all_distances_out, n_known_out)
+    distances_in = random.sample(all_distances_in, n_known_in)
+
+    print(f'{len(all_distances_in)=}')
+    print(f'{len(all_distances_out)=}')
+
+    si = SpectrumInfo(n=n,
+                      known_in=distances_in,
+                      known_out=distances_out,
+                      param_omega=weight,
+                      recovery_parameters=KeyFromSpectrumAlgorithmParams(6, 10, 55))
+
+    si.test_if_recovery_works(secret_support, n_tries=n_tries)
+
+
+def test_if_key_recovery_is_possible_for_hqc_challenge(datafile):
+    # We know that the attack for for these parameters
+    # estimate_good_attack_parameters_for_hqc(4000)
+    n_known_out = 4000
+    n_known_in = math.ceil(n_known_out / 3.6)  # Heuristic assumption
+
+    full_df = pd.read_csv(datafile)
+
+    for n_challenges in full_df.n_challenges.unique():
+        df = full_df[full_df.n_challenges == n_challenges]
+        n = len(df)
+        sorted_e0_estimators = sorted(df.spec_r2_estimator)
+        limit_below_out = sorted_e0_estimators[n - n_known_out - 1]
+        limit_above_in = sorted_e0_estimators[n_known_in]
+
+        if len(df[(df.spec_r2_estimator >= limit_below_out) & (df.spec_x != 0)]) > 0:
+            print(f'{n_challenges=}: noo : (')
+            continue
+
+        if len(df[(df.spec_r2_estimator <= limit_above_in) & (df.spec_x == 0)]) > 0:
+            print(f'{n_challenges=}: noo : (')
+            continue
+
+        print(f'{n_challenges=}: yes! : )')
+        break
 
 
 
