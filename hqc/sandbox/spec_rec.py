@@ -264,13 +264,23 @@ def test_key_recovery_from_spectrum():
 
 
 
-def estimate_good_attack_parameters(n: int, weight: int):
+def estimate_good_attack_parameters(n: int, n_known_out, weight: int, n_tries=100):
+    n_known_in = n_known_out // 2  # Heuristic assumption
 
     secret_support = random.sample(range(n), weight)
     secret_spectrum = get_spectrum(n, secret_support)
 
-    distances_in = list(secret_spectrum)
-    distances_out = [i for i in range(n//2 + 1) if i not in secret_spectrum]
+    all_distances_out = [i for i in range(n//2 + 1) if i not in secret_spectrum]
+    all_distances_in = list(secret_spectrum)
+
+    n_known_out = min(n_known_out, len(all_distances_out))
+    n_known_in = min(n_known_in, len(all_distances_in))
+
+    distances_out = random.sample(all_distances_out, n_known_out)
+    distances_in = random.sample(all_distances_in, n_known_in)
+
+    print(f'{len(distances_in)=}')
+    print(f'{len(distances_out)=}')
 
     si = SpectrumInfo(n=n,
                       known_in=distances_in,
@@ -278,7 +288,7 @@ def estimate_good_attack_parameters(n: int, weight: int):
                       param_omega=weight,
                       recovery_parameters=KeyFromSpectrumAlgorithmParams(6, 10, 55))
 
-    si.test_if_recovery_works(secret_support)
+    si.test_if_recovery_works(secret_support, n_tries=n_tries)
 
 
 
@@ -287,4 +297,5 @@ if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
 
     # BIKE PARAMETERS
-    estimate_good_attack_parameters(n=12323, weight=71)
+    # estimate_good_attack_parameters(n=12323, weight=71)
+    pass
