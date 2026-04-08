@@ -265,7 +265,7 @@ def test_key_recovery_from_spectrum():
 
 
 
-def estimate_good_attack_parameters(n: int, n_known_out, weight: int, n_tries=100):
+def estimate_good_attack_parameters_for_bike(n_known_out, n=12323, weight=71, n_tries=100):
     n_known_in = n_known_out // 2  # Heuristic assumption
 
     secret_support = random.sample(range(n), weight)
@@ -294,7 +294,7 @@ def estimate_good_attack_parameters(n: int, n_known_out, weight: int, n_tries=10
 
 def test_if_key_recovery_is_possible_for_bike_challenge(datafile):
     # We know that the attack for for these parameters
-    # estimate_good_attack_parameters(n=12323, weight=71, n_known_out=3000)
+    # estimate_good_attack_parameters_for_bike(n=12323, weight=71, n_known_out=3000)
     n_known_out = 3000
     n_known_in = n_known_out // 2
 
@@ -322,5 +322,5 @@ if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
 
     # BIKE PARAMETERS
-    # estimate_good_attack_parameters(n=12323, weight=71)
+    # estimate_good_attack_parameters_for_bike(n=12323, weight=71)
     pass
