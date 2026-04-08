@@ -2,6 +2,7 @@ import random
 import tqdm
 from dataclasses import dataclass
 
+import pandas as pd
 
 def get_spectrum(n, support):
     '''
@@ -291,7 +292,31 @@ def estimate_good_attack_parameters(n: int, n_known_out, weight: int, n_tries=10
     si.test_if_recovery_works(secret_support, n_tries=n_tries)
 
 
+def test_if_key_recovery_is_possible_for_bike_challenge(datafile):
+    # We know that the attack for for these parameters
+    # estimate_good_attack_parameters(n=12323, weight=71, n_known_out=3000)
+    n_known_out = 3000
+    n_known_in = n_known_out // 2
 
+    full_df = pd.read_csv(datafile)
+
+    for n_challenges in full_df.n_challenges.unique():
+        df = full_df[full_df.n_challenges == n_challenges]
+        n = len(df)
+        sorted_e0_estimators = sorted(df.spec_e0_estimator)
+        limit_below_out = sorted_e0_estimators[n - n_known_out - 1]
+        limit_above_in = sorted_e0_estimators[n_known_in]
+
+        if len(df[(df.spec_e0_estimator >= limit_below_out) & (df.spec_h0 != 0)]) > 0:
+            # print(f'{n_challenges=}: noo : (')
+            continue
+
+        if len(df[(df.spec_e0_estimator <= limit_above_in) & (df.spec_h0 == 0)]) > 0:
+            # print(f'{n_challenges=}: noo : (')
+            continue
+
+        print(f'{n_challenges=}: yes! : )')
+        break
 
 if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
