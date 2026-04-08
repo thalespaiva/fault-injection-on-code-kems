@@ -159,6 +159,7 @@ int main(int argc, char *argv[])
   uint32_t e1_spec_fails[R_SPECTRUM_SIZE] = {0};
   uint32_t e1_spec_total[R_SPECTRUM_SIZE] = {0};
 
+  fprintf(stderr, "LEVEL = %d\n", LEVEL);
   printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
 
   for(size_t i = 1; i <= n_decaps; ++i) {
