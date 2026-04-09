@@ -263,8 +263,9 @@ def test_key_recovery_from_spectrum():
         print("    Support (likely rotated):")
         print("   ", x)
 
-def estimate_good_attack_parameters_for_hqc(n_known_out, n=17669, weight=66, n_tries=100):
-    n_known_in = math.ceil(n_known_out / 3.6)  # Heuristic assumption
+def estimate_good_attack_parameters_for_hqc(n_assumed_out, n_false_out, n_assumed_in, n_false_in,
+                                            n=17669, weight=66, n_tries=100):
+    n_known_in = math.ceil(n_assumed_out / 3.6)  # Heuristic assumption
 
     secret_support = random.sample(range(n), weight)
     secret_spectrum = get_spectrum(n, secret_support)
@@ -272,11 +273,17 @@ def estimate_good_attack_parameters_for_hqc(n_known_out, n=17669, weight=66, n_t
     all_distances_out = [i for i in range(n//2 + 1) if i not in secret_spectrum]
     all_distances_in = list(secret_spectrum)
 
-    n_known_out = min(n_known_out, len(all_distances_out))
-    n_known_in = min(n_known_in, len(all_distances_in))
+    n_assumed_out = min(n_assumed_out, len(all_distances_out))
+    n_assumed_in = min(n_known_in, len(all_distances_in))
 
-    distances_out = random.sample(all_distances_out, n_known_out)
-    distances_in = random.sample(all_distances_in, n_known_in)
+    false_in = random.sample(all_distances_out, n_false_in)
+    false_out = random.sample(all_distances_in, n_false_out)
+
+    all_distances_out = list(set(all_distances_out) - set(false_in))
+    all_distances_in = list(set(all_distances_in) - set(false_out))
+
+    distances_out = random.sample(all_distances_out, n_assumed_out - n_false_out)
+    distances_in = random.sample(all_distances_in, n_known_in - n_false_in)
 
     print(f'{len(all_distances_in)=}')
     print(f'{len(all_distances_out)=}')
@@ -288,6 +295,18 @@ def estimate_good_attack_parameters_for_hqc(n_known_out, n=17669, weight=66, n_t
                       recovery_parameters=KeyFromSpectrumAlgorithmParams(6, 10, 55))
 
     si.test_if_recovery_works(secret_support, n_tries=n_tries)
+
+
+def analyze_dataframe(df):
+    # df = pd.read_csv(datafile)
+    # df = df[df.n_challenges == n_challenges]
+    for v in sorted(df.spec_r2_estimator.unique()):
+        n_in_below = len(df[(df.spec_r2_estimator <= v) &(df.spec_x > 0)])
+        n_out_below = len(df[(df.spec_r2_estimator <= v) &(df.spec_x == 0)])
+        n_in_above = len(df[(df.spec_r2_estimator >= v) &(df.spec_x > 0)])
+        n_out_above = len(df[(df.spec_r2_estimator >= v) &(df.spec_x == 0)])
+        print(f'{v=}, {n_in_below=}, {n_out_below=}, {n_in_above=}, {n_out_above=}')
+
 
 
 def test_if_key_recovery_is_possible_for_hqc_challenge(datafile):
