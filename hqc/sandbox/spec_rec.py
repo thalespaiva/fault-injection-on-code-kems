@@ -3,6 +3,7 @@ import tqdm
 from dataclasses import dataclass
 import math
 import pandas as pd
+from ast import literal_eval
 
 def get_spectrum(n, support):
     '''
@@ -84,6 +85,12 @@ class SpectrumInfo:
             for d in self.known_out:
                 s1 = self.modpos(s + d)
                 s2 = self.modpos(s - d)
+
+                if s1 in support:
+                    continue
+                if s2 in support:
+                    continue
+
                 if s1 not in null:
                     null[s1] = 0
                 if s2 not in null:
@@ -155,7 +162,7 @@ class SpectrumInfo:
 
         # Last phase: sometimes (or most of the times), not all OMEGA entries are found
         #  -> Only enters if support is sufficiently large (i.e. > `min_support_size`)
-        if self.recovery_parameters.min_support_size < len(support) < self.param_omega:
+        if self.recovery_parameters.min_support_size <= len(support) < self.param_omega:
             n_missing = self.param_omega - len(support)  # number of missing entries in the support
             null_rating = self.get_null_rating_for_partial_support(support)  # get scores for each nullified position
 
@@ -165,10 +172,13 @@ class SpectrumInfo:
             # Add the most unlikely null entries to the support
             support = support.union([u[0] for u in unlikely_null_with_rating])
 
-        # Info print:
-        print(f'[*] Found length {len(support)}:', support)
 
-        return sorted(support)
+        sorted_support = sorted(support)
+        # Info print:
+        print(f'[*] Found length {len(support)}:', sorted_support)
+
+        return sorted_support
+
 
     def test_if_is_shifted_key(self, known_target_key_support, candidate_key_support):
         known_target_key_support = sorted(known_target_key_support)
@@ -202,14 +212,23 @@ class SpectrumInfo:
     def reflect_support(self, support):
         return [(-i) % self.n for i in support]
 
-    def test_if_recovery_works(self, real_key_support, n_tries=100):
+    def test_if_recovery_works(self, real_key_support, n_tries=100, seed=0):
         found_key = False
+
+        # For reproducibility of key recovery attacks
+        random.seed(seed)
 
         w = len(real_key_support)
 
         x = None
+        base_x = None
+
+        # We keep track of the last guesses to prevent the search to get stuck into a bad set
+        n_last_gueeses_to_keep_track = 50
+        last_guesses = [None] * n_last_gueeses_to_keep_track;
+
         for i in range(n_tries):
-            x = self.recover()
+            x = self.recover(support=base_x)
 
             if len(x) == w:
                 found_key = self.test_if_is_shifted_key(x, real_key_support)
@@ -219,6 +238,14 @@ class SpectrumInfo:
 
             if found_key:
                 break
+
+            last_guesses[i % n_last_gueeses_to_keep_track] = set(x)
+
+            if len(last_guesses) < n_last_gueeses_to_keep_track//2:
+                base_x = None  # If it is stuck into a set that does not provide much variane, restart with empty guess
+            else:
+                base_x = set([0] + random.sample(x[1:], len(x)//2))  # keep a bunch of entries of the last guess
+
 
         print()
         print('=' * 80)
@@ -298,14 +325,74 @@ def estimate_good_attack_parameters_for_hqc(n_assumed_out, n_false_out, n_assume
 
 
 def analyze_dataframe(df):
-    # df = pd.read_csv(datafile)
-    # df = df[df.n_challenges == n_challenges]
+
+    print('For (r1, y):')
     for v in sorted(df.spec_r2_estimator.unique()):
         n_in_below = len(df[(df.spec_r2_estimator <= v) &(df.spec_x > 0)])
         n_out_below = len(df[(df.spec_r2_estimator <= v) &(df.spec_x == 0)])
         n_in_above = len(df[(df.spec_r2_estimator >= v) &(df.spec_x > 0)])
         n_out_above = len(df[(df.spec_r2_estimator >= v) &(df.spec_x == 0)])
         print(f'{v=}, {n_in_below=}, {n_out_below=}, {n_in_above=}, {n_out_above=}')
+
+    print()
+    print('For (r2, x):')
+    for v in sorted(df.spec_r1_estimator.unique()):
+        n_in_below = len(df[(df.spec_r1_estimator <= v) &(df.spec_y > 0)])
+        n_out_below = len(df[(df.spec_r1_estimator <= v) &(df.spec_y == 0)])
+        n_in_above = len(df[(df.spec_r1_estimator >= v) &(df.spec_y > 0)])
+        n_out_above = len(df[(df.spec_r1_estimator >= v) &(df.spec_y == 0)])
+        print(f'{v=}, {n_in_below=}, {n_out_below=}, {n_in_above=}, {n_out_above=}')
+
+
+def parse_fia_simulation_csv(datafile):
+    list_converter = lambda x: map(int, )
+
+    df_xy = pd.read_csv(datafile, converters={
+        "x": literal_eval,
+        "y": literal_eval,
+    }, nrows=1)
+
+    x = df_xy.x[0]
+    y = df_xy.y[0]
+
+    df = pd.read_csv(datafile, skiprows=2)
+
+    return (x, y), df
+
+
+def run_key_recovery_against_real_dataset(datafile, n_challenges, n_distances_in, n_distances_out, seed=0):
+    random.seed(seed)
+
+    (x, y), df = parse_fia_simulation_csv(datafile)
+
+    df = df[df.n_challenges == n_challenges]
+
+    sorted_r2_estimators = sorted(df.spec_r2_estimator)
+    threshold_in = sorted_r2_estimators[n_distances_in]
+    threshold_out = sorted_r2_estimators[-n_distances_out]
+
+    distances_in = random.sample(list(df[df.spec_r2_estimator <= threshold_in].distance), n_distances_in)
+    distances_out = random.sample(list(df[df.spec_r2_estimator >= threshold_out].distance), n_distances_out)
+
+    # print(distances_in)
+    # print(distances_out)
+    n = len(df) * 2 + 1
+    weight = len(x)
+    print(f'{(n, weight) = }')
+    print(df.head())
+    print(f'{threshold_in=}')
+    print(f'{threshold_out=}')
+
+
+    si = SpectrumInfo(n=n,
+                      known_in=distances_in,
+                      known_out=distances_out,
+                      param_omega=weight,
+                      recovery_parameters=KeyFromSpectrumAlgorithmParams(7, 10, 20))
+
+    return si.test_if_recovery_works(x, n_tries=1000, seed=seed)
+
+    # return distances_in, distances_out
 
 
 
