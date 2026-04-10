@@ -20,7 +20,7 @@ trials=50000000
 
 for seed in $(seq 1 "$total_seeds"); do
   ./hqc/tmp_build_hqc_avx256/fia_simulation/fia_simulation_hqc_1 "$seed" "$trials" \
-    > "results/hqc/1fault_vect_add/hqc1_seed${seed}_15M_vect_add_1fault.csv" &
+    > "results/hqc/1fault_vect_add/hqc1_seed${seed}_50M_vect_add_1fault.csv" &
 
   while [ "$(jobs -rp | wc -l)" -ge "$max_jobs" ]; do
     wait -n
