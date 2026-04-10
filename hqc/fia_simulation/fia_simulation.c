@@ -64,7 +64,7 @@ typedef struct r_spectrum_s {
 void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num);
 int get_distance(int pos1, int pos2, int length);
 void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in);
-
+void print_sparse_vector(uint64_t in[]);
 
 void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num) {
   for (uint32_t i = 0; i < bits_num; i++) {
@@ -108,6 +108,22 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in) {
   }
 }
 
+void print_sparse_vector(uint64_t in[]) {
+  uint32_t support[PARAM_N] = {0};
+
+  int n_support = 0;
+  for (int i = 0; i < PARAM_N; i++) {
+    if ((in[i / 64] >> (i % 64)) & 1) {
+      support[n_support++] = i;
+    }
+  }
+  printf("[");
+  for (int i = 0; i < n_support; i++) {
+    printf("%d", support[i]);
+    if (i < n_support - 1) printf(",");
+  }
+  printf("]");
+}
 
 
 int main(int argc, char *argv[]) {
@@ -137,6 +153,12 @@ int main(int argc, char *argv[]) {
     prng_init(seed, NULL, 48, 0);
 
     crypto_kem_keypair(pk, sk);
+
+    printf("x,y\n");
+    print_sparse_vector(global_x);
+    printf(",");
+    print_sparse_vector(global_y);
+    printf("\n");
 
     r_spectrum_t spectrum_x = {0};
     get_r_spectrum(&spectrum_x, global_x);
