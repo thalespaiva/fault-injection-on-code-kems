@@ -16,6 +16,19 @@
 #include <stdio.h>
 #endif
 
+// THIS IS NOT SUPPORTED FOR AVX2: #define FAULT_DECAPS_ON_MULT_U_SK 0 // Karatsuba fault (requires 2 faults per decaps)
+#define FAULT_REENCRYPTION_ON_VEC_ADD 1   // Early break on vect_add during reencryption (requires 1 fault per decaps)
+
+extern int FAULT_VECT_ADD; // Variable (declared in gf2x.c) that triggers fault in vect_add
+
+extern uint64_t global_x[VEC_N_256_NUM_WORDS << 2];
+extern uint64_t global_y[VEC_N_256_NUM_WORDS << 2];
+extern uint64_t global_noise_hw[VEC_N_256_NUM_WORDS << 2];
+
+extern uint64_t global_r1[VEC_N_256_NUM_WORDS << 2];
+extern uint64_t global_r2[VEC_N_256_NUM_WORDS << 2];
+extern uint64_t global_e[VEC_N_256_NUM_WORDS << 2];
+
 /**
  * @brief Generates a key pair for the HQC public-key encryption (PKE) scheme.
  *
@@ -56,6 +69,9 @@ void hqc_pke_keygen(uint8_t *ek_pke, uint8_t *dk_pke, uint8_t *seed) {
     xof_init(&dk_xof_ctx, seed_dk, SEED_BYTES);
     vect_sample_fixed_weight1(&dk_xof_ctx, y, PARAM_OMEGA);
     vect_sample_fixed_weight1(&dk_xof_ctx, x, PARAM_OMEGA);
+
+    memcpy(global_x, x, sizeof(x));
+    memcpy(global_y, y, sizeof(y));
 
     // Compute encryption key
     xof_init(&ek_xof_ctx, seed_ek, SEED_BYTES);
@@ -141,6 +157,10 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
     vect_sample_fixed_weight2(&theta_xof_ctx, e, PARAM_OMEGA_E);
     vect_sample_fixed_weight2(&theta_xof_ctx, r1, PARAM_OMEGA_R);
 
+    memcpy(global_e, e, sizeof(e));
+    memcpy(global_r1, r1, sizeof(r1));
+    memcpy(global_r2, r2, sizeof(r2));
+
     // Compute u = r1 + r2.h
     vect_mul(tmp1, r2, h);
     vect_add(c_pke->u, (uint64_t *)r1, (uint64_t *)tmp1, VEC_N_256_SIZE_64);
@@ -152,7 +172,12 @@ void hqc_pke_encrypt(ciphertext_pke_t *c_pke, const uint8_t *ek_pke, const uint6
     vect_mul(tmp2, r2, s);
     vect_add(tmp3, (uint64_t *)e, (uint64_t *)tmp2, VEC_N_256_SIZE_64);
     vect_truncate(tmp3);
-    vect_add(c_pke->v, c_pke->v, tmp3, VEC_N1N2_SIZE_64);
+
+    // vect_add(c_pke->v, c_pke->v, tmp3, VEC_N1N2_SIZE_64);
+    if (FAULT_REENCRYPTION_ON_VEC_ADD) FAULT_VECT_ADD = 1;
+    vect_add(c_pke->v, c_pke->v, tmp3, VEC_N1N2_SIZE_64); // v = C.encode(m) + (e + r2 * s)
+    if (FAULT_REENCRYPTION_ON_VEC_ADD) FAULT_VECT_ADD = 0;
+
 
 #ifdef VERBOSE
     printf("\n\nh: ");

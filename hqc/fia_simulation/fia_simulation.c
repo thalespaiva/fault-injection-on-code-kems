@@ -7,29 +7,31 @@
 #include <time.h>
 #include <unistd.h>
 #include "api.h"
-#include "parameters.h"
+#include "hqc.h"
 #include "symmetric.h"
 
-#define IN
-#define OUT
+#if HQC_ARCH_X86_64_AVX256 == 1
 
-// #define CHECKPOINT_STEP 500000
-// #define CHECKPOINT_STEP 100000
-#define CHECKPOINT_STEP 50000
+#include "x86_64/common/hqc-1/parameters.h"
 
-#define R_SPECTRUM_SIZE (PARAM_N / 2) + 1
+#define VEC_N_256_NUM_WORDS (VEC_N_256_SIZE_64 >> 2)
 
-// The spectrum of `r`-bit vectors
-typedef struct r_spectrum_s {
-  uint32_t multiplicities[R_SPECTRUM_SIZE];
-} r_spectrum_t;
-
-// static void vect_print(const uint64_t *v, const uint32_t size);
-void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num);
-int get_distance(int pos1, int pos2, int length);
-void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in);
+// BEGIN SECRET VARIABLES -- NOT KNOWN TO THE FIA ATTACKER ========================================
+uint64_t global_x[VEC_N_256_NUM_WORDS << 2] = {0};
+uint64_t global_y[VEC_N_256_NUM_WORDS << 2] = {0};
+uint64_t global_noise_hw[VEC_N_256_NUM_WORDS << 2] = {0};
+// END SECRET VARIABLES ===========================================================================
 
 
+// BEGIN ATTACKER VARIABLES -- VALUES KNOWN TO THE FIA ATTACKER ===================================
+uint64_t global_r1[VEC_N_256_NUM_WORDS << 2] = {0};
+uint64_t global_r2[VEC_N_256_NUM_WORDS << 2] = {0};
+uint64_t global_e[VEC_N_256_NUM_WORDS << 2] = {0};
+// END ATTACKER VARIABLES =========================================================================
+
+#else
+
+#include "parameters.h"
 
 // BEGIN SECRET VARIABLES -- NOT KNOWN TO THE FIA ATTACKER ========================================
 uint64_t global_x[VEC_N_SIZE_64] = {0};
@@ -44,6 +46,24 @@ uint64_t global_r2[VEC_N_SIZE_64] = {0};
 uint64_t global_e[VEC_N_SIZE_64] = {0};
 // END ATTACKER VARIABLES =========================================================================
 
+#endif
+
+#define IN
+#define OUT
+
+#define CHECKPOINT_STEP 1000000
+
+#define R_SPECTRUM_SIZE (PARAM_N / 2) + 1
+
+// The spectrum of `r`-bit vectors
+typedef struct r_spectrum_s {
+  uint32_t multiplicities[R_SPECTRUM_SIZE];
+} r_spectrum_t;
+
+// static void vect_print(const uint64_t *v, const uint32_t size);
+void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num);
+int get_distance(int pos1, int pos2, int length);
+void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in);
 
 
 void print_nonnull_positions(IN const uint64_t *in, IN const uint32_t bits_num) {
@@ -129,6 +149,7 @@ int main(int argc, char *argv[]) {
     uint32_t r1_spec_fails[R_SPECTRUM_SIZE] = {0};
     uint32_t r1_spec_total[R_SPECTRUM_SIZE] = {0};
 
+
     printf("n_challenges,distance,spec_x,spec_r2_estimator,spec_y,spec_r1_estimator\n");
 
 
@@ -152,7 +173,7 @@ int main(int argc, char *argv[]) {
         if (memcmp(ss1, ss2, SHARED_SECRET_BYTES)) {
             decaps_failure = 1;
         }
-
+        // printf("decaps_failure = %d\n", decaps_failure);
         for (int d = 0; d < R_SPECTRUM_SIZE; d++) {
             if (spectrum_r2.multiplicities[d]) {
                 r2_spec_fails[d] += decaps_failure * spectrum_r2.multiplicities[d];
@@ -164,7 +185,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (i % CHECKPOINT_STEP == 0 && i != n_decaps) {
+        if (i % CHECKPOINT_STEP == 0 || i == n_decaps) {
             // Print key spec and the estimators
             for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
                 printf("%ld,", i);
