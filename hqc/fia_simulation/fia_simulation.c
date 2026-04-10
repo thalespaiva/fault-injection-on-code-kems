@@ -112,12 +112,14 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in) {
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 2) {
-        printf("Usage: %s <n_decaps>\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s <seed> <n_decaps>\n", argv[0]);
         exit(1);
     }
 
-    long n_decaps = atol(argv[1]);
+    int base_seed = atoi(argv[1]);
+    long n_decaps = atol(argv[2]);
+
     // long n_errors = 0;
 
     unsigned char pk[PUBLIC_KEY_BYTES];
@@ -126,10 +128,11 @@ int main(int argc, char *argv[]) {
     unsigned char ss1[SHARED_SECRET_BYTES];
     unsigned char ss2[SHARED_SECRET_BYTES];
 
+    srand(base_seed);
+
     unsigned char seed[48] = {0};
-    // syscall(SYS_getrandom, seed, 48, 0);
     for (int i = 0; i < 48; i++) {
-        seed[i] = i;
+        seed[i] = rand();
     }
     prng_init(seed, NULL, 48, 0);
 
