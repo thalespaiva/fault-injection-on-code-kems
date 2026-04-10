@@ -117,12 +117,12 @@ void print_sparse_vector(uint64_t in[]) {
       support[n_support++] = i;
     }
   }
-  printf("[");
+  printf("\"[");
   for (int i = 0; i < n_support; i++) {
     printf("%d", support[i]);
     if (i < n_support - 1) printf(",");
   }
-  printf("]");
+  printf("]\"");
 }
 
 
