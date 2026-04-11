@@ -20,8 +20,8 @@
 #include <inttypes.h>
 #include <string.h>
 
-#define FAULT_DECAPS_ON_MULT_U_SK 0       // Karatsuba fault (requires 2 faults per decaps)
-#define FAULT_REENCRYPTION_ON_VEC_ADD 1   // Early break on vect_add during reencryption (requires 1 fault per decaps)
+#define FAULT_DECAPS_ON_MULT_U_SK 1       // Schoolbook (in Karatsuba) fault (requires 1 fault per decaps)
+#define FAULT_REENCRYPTION_ON_VEC_ADD 0   // Early break on vect_add during reencryption (requires 1 fault per decaps)
 
 extern int FAULT_VECT_ADD; // Variable (declared in gf2x.c) that triggers fault in vect_add
 extern int FAULT_VECT_MUL; // Variable (declared in vector.c) that triggers fault in vect_mul

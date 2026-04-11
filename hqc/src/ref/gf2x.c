@@ -29,6 +29,46 @@ static int N_FAULTS = 0;
  */
 #define TMP_BUFFER_WORDS (16 * VEC_N_SIZE_64)
 
+
+// This variable is accessible to the attacker to control when the fault will be applied
+int FIA_VECT_MUL_SCHOOLBOOK_TARGET_SECRET_COEFFICIENT = 0;
+
+// The variables bellow help us identify when a target secret coefficient is being processed
+static int CURRENT_SCHOOLBOOK_COEFF_PROCESSED = 0;
+static int KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 0;
+
+
+static void fia_schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
+    memset(r, 0, 2 * n * sizeof(uint64_t));
+    for (size_t i = 0; i < n; i++) {
+        uint64_t ai = a[i];
+        for (int bit = 0; bit < 64; bit++) {
+            uint64_t mask;
+            mask = -((ai >> bit) & 1ULL);
+            size_t base = i;
+            int sh = bit;
+            int inv = 64 - sh;
+            if ((FIA_VECT_MUL_SCHOOLBOOK_TARGET_SECRET_COEFFICIENT == CURRENT_SCHOOLBOOK_COEFF_PROCESSED) && (N_FAULTS++ == 0)) {
+                // base = 0;    // This works
+                // inv = 1;     // This also works
+                sh = 0;
+            }
+            if (sh == 0) {
+                for (size_t j = 0; j < n; j++) {
+                    r[base + j] ^= b[j] & mask;
+                }
+            } else {
+                for (size_t j = 0; j < n; j++) {
+                    r[base + j] ^= (b[j] << sh) & mask;
+                    r[base + j + 1] ^= (b[j] >> inv) & mask;
+                }
+            }
+            CURRENT_SCHOOLBOOK_COEFF_PROCESSED++;
+        }
+    }
+}
+
+
 /**
  * @brief Schoolbook multiplication over GF(2).
  *
@@ -39,9 +79,11 @@ static int N_FAULTS = 0;
  * @param[in]  b  Operand b, size n words.
  * @param[in]  n  Number of 64-bit words in a and b.
  */
-
-
 static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
+    if (FAULT_VECT_MUL && KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF) {
+        fia_schoolbook_mul(r, a, b, n);
+        return;
+    }
     memset(r, 0, 2 * n * sizeof(uint64_t));
     for (size_t i = 0; i < n; i++) {
         uint64_t ai = a[i];
@@ -52,17 +94,10 @@ static void schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, si
             int inv = 64 - sh;
             if (sh == 0) {
                 for (size_t j = 0; j < n; j++) {
-                    if (FAULT_VECT_MUL && (N_FAULTS == 0)) {
-                        N_FAULTS++;
-                        r[base + j] ^= b[j];
-                    }
-                    else {
-                        r[base + j] ^= b[j] & mask;
-                    }
+                    r[base + j] ^= b[j] & mask;
                 }
             } else {
                 for (size_t j = 0; j < n; j++) {
-
                     r[base + j] ^= (b[j] << sh) & mask;
                     r[base + j + 1] ^= (b[j] >> inv) & mask;
                 }
@@ -107,26 +142,28 @@ static void karatsuba_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, siz
     uint64_t *child_buffer = tmp_buffer + 8 * n;
 
     /* 1) low * low */
+    // KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = ~BAD_KARATSUBA_CALL_WITH_NO_TARGET_SCHOOLBOOK;
     karatsuba_mul(z0, a, b, n0, child_buffer);
+    // KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 0;
 
+    // KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = ~BAD_KARATSUBA_CALL_WITH_NO_TARGET_SCHOOLBOOK;
     /* 2) high * high */
     karatsuba_mul(z2, a + m, b + m, n1, child_buffer);
+    // KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 0;
 
     /* 3) (a0+a1)*(b0+b1) */
     for (size_t i = 0; i < n1; i++) {
         uint64_t loa = (i < n0 ? a[i] : 0);
         uint64_t lob = (i < n0 ? b[i] : 0);
         ta[i] = loa ^ a[m + i];
-        if (FAULT_VECT_MUL && (N_FAULTS == 1)) {
-            N_FAULTS++;
-            tb[i] = lob;
-        }
-        else {
-            tb[i] = lob ^ b[m + i];
-        }
+        tb[i] = lob ^ b[m + i];
     }
 
+    int tmp_flag = KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF;
+    KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 0;
     karatsuba_mul(zmid, ta, tb, n1, child_buffer);
+    KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = tmp_flag;
+
     /* 4) assemble into r */
     memset(r, 0, 2 * n * sizeof(uint64_t));
     for (size_t i = 0; i < 2 * n0; i++) r[i] ^= z0[i];
@@ -166,9 +203,10 @@ static void reduce(uint64_t *o, const uint64_t *a) {
  * @param[in]  a1  Operand polynomial a(x).
  * @param[in]  a2  Operand polynomial b(x).
  */
-
 void vect_mul(uint64_t *o, const uint64_t *a1, const uint64_t *a2) {
     N_FAULTS = 0;
+    CURRENT_SCHOOLBOOK_COEFF_PROCESSED = 0;
+    KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 1;
 
     uint64_t unreduced[2 * VEC_N_SIZE_64];
     uint64_t tmp_buffer[TMP_BUFFER_WORDS];
