@@ -37,6 +37,7 @@ int FIA_VECT_MUL_SCHOOLBOOK_TARGET_SECRET_COEFFICIENT = 0;
 static int CURRENT_SCHOOLBOOK_COEFF_PROCESSED = 0;
 static int KARATSUBA_CALL_WITH_TARGET_SCHOOLBOOK_ON_LEAF = 0;
 
+#include <stdio.h>
 
 static void fia_schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t n) {
     memset(r, 0, 2 * n * sizeof(uint64_t));
@@ -49,9 +50,9 @@ static void fia_schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b
             int sh = bit;
             int inv = 64 - sh;
             if ((FIA_VECT_MUL_SCHOOLBOOK_TARGET_SECRET_COEFFICIENT == CURRENT_SCHOOLBOOK_COEFF_PROCESSED) && (N_FAULTS++ == 0)) {
-                // base = 0;    // This works
-                // inv = 1;     // This also works
-                sh = 0;
+                // if (bit > 0)
+                    // mask = -((ai >> (bit - 1)) & 1ULL); // Faulting an rsb
+                mask = -((ai >> bit)); // Faulting an and operation
             }
             if (sh == 0) {
                 for (size_t j = 0; j < n; j++) {
