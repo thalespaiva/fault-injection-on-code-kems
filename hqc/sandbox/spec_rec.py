@@ -530,7 +530,6 @@ if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
 
     # estimate_good_attack_parameters_for_bike(n_known_out = 3376, n = 12323, weight = 71)
-    datafile = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/bike1_seed2_15M.csv.xz'
     MAX_N_RUNS = 1000 # Should be 1000
     N_KNOWN_OUT_LOWER_VALUE = 2900 # Should be ~2900 
     N_KNOWN_OUT_UPPER_VALUE = 4200 # Should be around 4000
