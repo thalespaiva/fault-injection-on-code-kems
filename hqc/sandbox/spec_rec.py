@@ -575,6 +575,17 @@ def print_number_of_ciphertexts_needed_for_bike(path):
     print()
 
 
+# FUNCTIONS ALLOWING REPRODUCTION OF THE ATTACKS
+
+def run_key_recovery_experiment_for_hqc_vect_add_fault():
+    results = []
+    for i in range(1, 11):
+        res = run_key_recovery_against_real_dataset('results/hqc/1fault_vect_add/hqc1_seed%d_50M_vect_add_1fault.csv.xz' % i, 50000000, 1200, 5000)
+        results.append(res)
+    print()
+    print('[+] Key recovery results: ', results)
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
