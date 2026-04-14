@@ -406,7 +406,7 @@ def parse_fia_simulation_csv(datafile):
     return (x, y), df
 
 
-def run_key_recovery_against_real_dataset(datafile, n_challenges, n_distances_in, n_distances_out, seed=0):
+def run_key_recovery_against_real_dataset_hqc(datafile, n_challenges, n_distances_in, n_distances_out, seed=0):
     random.seed(seed)
 
     (x, y), df = parse_fia_simulation_csv(datafile)
@@ -438,7 +438,39 @@ def run_key_recovery_against_real_dataset(datafile, n_challenges, n_distances_in
 
     return si.test_if_recovery_works(x, n_tries=1000, seed=seed)
 
-    # return distances_in, distances_out
+
+def run_key_recovery_against_real_dataset_bike(datafile, weight, n_challenges, n_distances_in, n_distances_out, seed=0):
+    random.seed(seed)
+
+    df = pd.read_csv(datafile)
+
+    df = df[df.n_challenges == n_challenges]
+
+    # TODO: Consider e1 estimators for h1 too
+    sorted_e0_estimators = sorted(df.spec_e0_estimator)
+    threshold_in = sorted_e0_estimators[n_distances_in]
+    threshold_out = sorted_e0_estimators[-n_distances_out]
+
+    distances_in = random.sample(list(df[df.spec_e0_estimator <= threshold_in].distance), n_distances_in)
+    distances_out = random.sample(list(df[df.spec_e0_estimator >= threshold_out].distance), n_distances_out)
+
+    # print(distances_in)
+    # print(distances_out)
+    n = len(df) * 2 + 1
+    print(f'{(n, weight) = }')
+    print(df.head())
+    print(f'{threshold_in=}')
+    print(f'{threshold_out=}')
+
+    si = SpectrumInfo(n=n,
+                      known_in=distances_in,
+                      known_out=distances_out,
+                      param_omega=weight,
+                      recovery_parameters=KeyFromSpectrumAlgorithmParams(5, 10, 45))
+
+    real_key_spectrum = {i: v for i, v in zip(range(1, n//2 + 1), df.spec_h0) if v > 0}
+    return si.test_if_recovery_works_given_expected_spectrum(real_key_spectrum, weight, n_tries=1000, seed=seed)
+
 
 
 
@@ -580,7 +612,17 @@ def print_number_of_ciphertexts_needed_for_bike(path):
 def run_key_recovery_experiment_for_hqc_vect_add_fault():
     results = []
     for i in range(1, 11):
-        res = run_key_recovery_against_real_dataset('results/hqc/1fault_vect_add/hqc1_seed%d_50M_vect_add_1fault.csv.xz' % i, 50000000, 1200, 5000)
+        res = run_key_recovery_against_real_dataset_hqc('results/hqc/1fault_vect_add/hqc1_seed%d_50M_vect_add_1fault.csv.xz' % i, 50000000, 1200, 5000)
+        results.append(res)
+    print()
+    print('[+] Key recovery results: ', results)
+
+
+def run_key_recovery_experiment_for_bike_threshold_fault():
+
+    results = []
+    for i in range(1, 11):
+        res = run_key_recovery_against_real_dataset_bike(f'results/bike/bike1_seed{i}_15M.csv.xz', 71, 5000000, 1500, 3500)
         results.append(res)
     print()
     print('[+] Key recovery results: ', results)
