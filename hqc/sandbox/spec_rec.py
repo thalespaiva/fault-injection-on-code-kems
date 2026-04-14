@@ -176,7 +176,7 @@ class SpectrumInfo:
 
         sorted_support = sorted(support)
         # Info print:
-        # print(f'[*] Found length {len(support)}:', sorted_support)
+        print(f'[*] Found length {len(support)}:', sorted_support)
 
         return sorted_support
 
@@ -256,6 +256,47 @@ class SpectrumInfo:
             # print("   ", x)
         # else:
             # print('[-] Not found : (')
+
+        return found_key
+
+    def test_if_recovery_works_given_expected_spectrum(self, real_key_spectrum, w, n_tries=100, seed=0):
+        found_key = False
+
+        # For reproducibility of key recovery attacks
+        random.seed(seed)
+
+        x = None
+        base_x = None
+
+        # We keep track of the last guesses to prevent the search to get stuck into a bad set
+        n_last_gueeses_to_keep_track = 50
+        last_guesses = [None] * n_last_gueeses_to_keep_track;
+
+        for i in range(n_tries):
+            print(i)
+            x = self.recover(support=base_x)
+
+            spectrum_x = get_spectrum(self.n, x)
+            if spectrum_x == real_key_spectrum:
+                found_key = True
+                break
+
+            last_guesses[i % n_last_gueeses_to_keep_track] = tuple(sorted(x))
+
+            if len(set(last_guesses)) < n_last_gueeses_to_keep_track//2:
+                base_x = None  # If it is stuck into a set that does not provide much variane, restart with empty guess
+            else:
+                base_x = set([0] + random.sample(x[1:], len(x)//2))  # keep a bunch of entries of the last guess
+
+
+        print()
+        print('=' * 80)
+        if found_key:
+            print("[+] Key found : ) ")
+            print("    Support (likely rotated):")
+            print("   ", x)
+        else:
+            print('[-] Not found : (')
 
         return found_key
 
