@@ -248,14 +248,14 @@ class SpectrumInfo:
                 base_x = set([0] + random.sample(x[1:], len(x)//2))  # keep a bunch of entries of the last guess
 
 
-        # print()
-        # print('=' * 80)
-        # if found_key:
-            # print("[+] Key found : ) ")
-            # print("    Support (likely rotated):")
-            # print("   ", x)
-        # else:
-            # print('[-] Not found : (')
+        print()
+        print('=' * 80)
+        if found_key:
+            print("[+] Key found : ) ")
+            print("    Support (likely rotated):")
+            print("   ", x)
+        else:
+            print('[-] Not found : (')
 
         return found_key
 
@@ -525,6 +525,10 @@ def print_number_of_ciphertexts_needed_for_bike(path):
         fullpath = os.path.join(path, file)
         print(f"{i}, {fullpath}, \t{test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['tag']} -> {test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['min']}")
 
+    print()
+    print("=" * 80)
+    print()
+
 
 if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
@@ -532,12 +536,14 @@ if __name__ == '__main__':
     # estimate_good_attack_parameters_for_bike(n_known_out = 3376, n = 12323, weight = 71)
     MAX_N_RUNS = 1000 # Should be 1000
     N_KNOWN_OUT_LOWER_VALUE = 2900 # Should be ~2900 
-    N_KNOWN_OUT_UPPER_VALUE = 4200 # Should be around 4000
+    N_KNOWN_OUT_UPPER_VALUE = 4600 # Should be around 4000
     INCR_STEP = 100 # Something from 50 to 100
 
     path = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/'
     files = os.listdir(path)
     files.sort()
+
+    print_number_of_ciphertexts_needed_for_bike(path)
 
     for i, file in enumerate(files):
         success_attack_dict = {}
