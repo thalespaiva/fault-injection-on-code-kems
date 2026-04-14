@@ -3,8 +3,8 @@ set -euo pipefail
 
 mkdir -p results/hqc/1fault_schoolbook_mul
 
-max_jobs=10
-total_seeds=10
+max_jobs=5
+total_seeds=50
 
 for seed in $(seq 1 "$total_seeds"); do
   ./build/hqc/fia_simulation/fia_simulation_cbz_hqc_1 "$seed" \
