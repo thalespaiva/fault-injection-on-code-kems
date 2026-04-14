@@ -5,6 +5,7 @@ import math
 import pandas as pd
 from ast import literal_eval
 import os
+import argparse, sys
 
 def get_spectrum(n, support):
     '''
@@ -561,25 +562,38 @@ def print_number_of_ciphertexts_needed_for_bike(path):
     print(f"'tag' represents which of the random vectors (e0 or e1) that produces the minimum number of decapsulations needed to conduct the attack")
     print(f"Structure of the log: <i>, <the complete path to csv file> <extracted data>")
     print("=" * 80)
+    print()
 
     for i, file in enumerate(files):
         fullpath = os.path.join(path, file)
         print(f"{i}, {fullpath}, \t{test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['tag']} -> {test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['min']}")
 
+    print("=" * 80)
+    print()
+
 
 if __name__ == '__main__':
-    # test_key_recovery_from_spectrum()
 
-    # estimate_good_attack_parameters_for_bike(n_known_out = 3376, n = 12323, weight = 71)
-    datafile = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/bike1_seed2_15M.csv.xz'
+    parser = argparse.ArgumentParser(
+        description = "Compute the n_known_out of a given file."
+    )
+    parser.add_argument(
+        "path",
+        type = str,
+        help = "Path to the CSV file."
+    )
+    args = parser.parse_args()
+
     MAX_N_RUNS = 1000 # Should be 1000
     N_KNOWN_OUT_LOWER_VALUE = 2900 # Should be ~2900 
-    N_KNOWN_OUT_UPPER_VALUE = 4200 # Should be around 4000
+    N_KNOWN_OUT_UPPER_VALUE = 4600 # Should be around 4000
     INCR_STEP = 100 # Something from 50 to 100
 
-    path = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/'
-    files = os.listdir(path)
+    # path = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/'
+    files = os.listdir(args.path)
     files.sort()
+
+    print_number_of_ciphertexts_needed_for_bike(args.path)
 
     for i, file in enumerate(files):
         success_attack_dict = {}
@@ -589,11 +603,13 @@ if __name__ == '__main__':
         for n_known_out in range(N_KNOWN_OUT_LOWER_VALUE, N_KNOWN_OUT_UPPER_VALUE, INCR_STEP):
             print(f"[>] Testing dataset of file {file} for n_known_out = {n_known_out}")
             n_runs = 0 
+            n_fails = 0
             n_success = 0
             list_of_succeeded_runs = []
 
             while (n_runs < MAX_N_RUNS):
                 if (not estimate_good_attack_parameters_for_bike(n_known_out, n = 12323, weight = 71)):
+                    n_fails += 1
                     break
                 else:
                     n_success += 1 # Success KR!
