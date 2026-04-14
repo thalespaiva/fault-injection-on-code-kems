@@ -241,22 +241,25 @@ class SpectrumInfo:
             if found_key:
                 break
 
-            last_guesses[i % n_last_gueeses_to_keep_track] = set(x)
+            last_guesses[i % n_last_gueeses_to_keep_track] = tuple(sorted(x))
 
-            if len(last_guesses) < n_last_gueeses_to_keep_track//2:
+            if len(set(last_guesses)) < n_last_gueeses_to_keep_track//2:
                 base_x = None  # If it is stuck into a set that does not provide much variane, restart with empty guess
             else:
                 base_x = set([0] + random.sample(x[1:], len(x)//2))  # keep a bunch of entries of the last guess
 
 
-        # print()
-        # print('=' * 80)
-        # if found_key:
-            # print("[+] Key found : ) ")
-            # print("    Support (likely rotated):")
-            # print("   ", x)
-        # else:
-            # print('[-] Not found : (')
+        print()
+        print('=' * 80)
+        if found_key:
+            print("[+] Key found : ) ")
+            print("    Support (likely rotated):")
+            print("   ", x)
+        else:
+            print('[-] Not found : (')
+        print('=' * 80)
+
+        print()
 
         return found_key
 
