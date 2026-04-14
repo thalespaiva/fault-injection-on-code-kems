@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import math
 import pandas as pd
 from ast import literal_eval
+import os
 
 def get_spectrum(n, support):
     '''
@@ -175,7 +176,7 @@ class SpectrumInfo:
 
         sorted_support = sorted(support)
         # Info print:
-        print(f'[*] Found length {len(support)}:', sorted_support)
+        # print(f'[*] Found length {len(support)}:', sorted_support)
 
         return sorted_support
 
@@ -247,14 +248,14 @@ class SpectrumInfo:
                 base_x = set([0] + random.sample(x[1:], len(x)//2))  # keep a bunch of entries of the last guess
 
 
-        print()
-        print('=' * 80)
-        if found_key:
-            print("[+] Key found : ) ")
-            print("    Support (likely rotated):")
-            print("   ", x)
-        else:
-            print('[-] Not found : (')
+        # print()
+        # print('=' * 80)
+        # if found_key:
+            # print("[+] Key found : ) ")
+            # print("    Support (likely rotated):")
+            # print("   ", x)
+        # else:
+            # print('[-] Not found : (')
 
         return found_key
 
@@ -439,8 +440,8 @@ def estimate_good_attack_parameters_for_bike(n_known_out, n=12323, weight=71, n_
     distances_out = random.sample(all_distances_out, n_known_out)
     distances_in = random.sample(all_distances_in, n_known_in)
 
-    print(f'{len(distances_in)=}')
-    print(f'{len(distances_out)=}')
+    # print(f'{len(distances_in)=}')
+    # print(f'{len(distances_out)=}')
 
     si = SpectrumInfo(n=n,
                       known_in=distances_in,
@@ -448,7 +449,7 @@ def estimate_good_attack_parameters_for_bike(n_known_out, n=12323, weight=71, n_
                       param_omega=weight,
                       recovery_parameters=KeyFromSpectrumAlgorithmParams(6, 10, 55))
 
-    si.test_if_recovery_works(secret_support, n_tries=n_tries)
+    return si.test_if_recovery_works(secret_support, n_tries=n_tries)
 
 
 def test_if_key_recovery_is_possible_for_bike_challenge(datafile):
@@ -458,6 +459,8 @@ def test_if_key_recovery_is_possible_for_bike_challenge(datafile):
     n_known_in = n_known_out // 2
 
     full_df = pd.read_csv(datafile)
+    n_challenges_as_dict_e0 = {}
+    n_challenges_as_dict_e1 = {}
 
     for n_challenges in full_df.n_challenges.unique():
         df = full_df[full_df.n_challenges == n_challenges]
@@ -474,12 +477,95 @@ def test_if_key_recovery_is_possible_for_bike_challenge(datafile):
             # print(f'{n_challenges=}: noo : (')
             continue
 
-        print(f'{n_challenges=}: yes! : )')
+        # print(f'{n_challenges=}: yes! : )')
+        n_challenges_as_dict_e0[datafile] = {'e0': n_challenges}
         break
+
+    for n_challenges in full_df.n_challenges.unique():
+        df = full_df[full_df.n_challenges == n_challenges]
+        n = len(df)
+        sorted_e1_estimators = sorted(df.spec_e1_estimator)
+        limit_below_out = sorted_e1_estimators[n - n_known_out - 1]
+        limit_above_in = sorted_e1_estimators[n_known_in]
+
+        if len(df[(df.spec_e1_estimator >= limit_below_out) & (df.spec_h1 != 0)]) > 0:
+            # print(f'{n_challenges=}: noo : (')
+            continue
+
+        if len(df[(df.spec_e1_estimator <= limit_above_in) & (df.spec_h1 == 0)]) > 0:
+            # print(f'{n_challenges=}: noo : (')
+            continue
+
+        # print(f'{n_challenges=}: yes! : )')
+        n_challenges_as_dict_e1[datafile] = {'e1': n_challenges}
+        break
+    
+    n_challenges_min = min(n_challenges_as_dict_e0[datafile]['e0'], n_challenges_as_dict_e1[datafile]['e1'])
+    n_challenges_max = max(n_challenges_as_dict_e0[datafile]['e0'], n_challenges_as_dict_e1[datafile]['e1'])
+
+    if (n_challenges_min == n_challenges_as_dict_e0[datafile]['e0']):
+        tag = 'e0'
+
+    else:
+        tag = 'e1'
+
+    return {'min': n_challenges_min, 'max': n_challenges_max, 'tag': tag}
+
+def print_number_of_ciphertexts_needed_for_bike(path):
+    files = os.listdir(path)
+    files.sort()
+    print("=" * 80)
+    print(f"Extracting the estimated number of decapsulations needed to conduct the attack on BIKE")
+    print(f"The data is a dictionary with keys 'min', 'max', and 'tag'")
+    print(f"'tag' represents which of the random vectors (e0 or e1) that produces the minimum number of decapsulations needed to conduct the attack")
+    print(f"Structure of the log: <i>, <the complete path to csv file> <extracted data>")
+    print("=" * 80)
+
+    for i, file in enumerate(files):
+        fullpath = os.path.join(path, file)
+        print(f"{i}, {fullpath}, \t{test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['tag']} -> {test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['min']}")
+
 
 if __name__ == '__main__':
     # test_key_recovery_from_spectrum()
 
-    # BIKE PARAMETERS
-    # estimate_good_attack_parameters_for_bike(n=12323, weight=71)
-    pass
+    # estimate_good_attack_parameters_for_bike(n_known_out = 3376, n = 12323, weight = 71)
+    datafile = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/bike1_seed2_15M.csv.xz'
+    MAX_N_RUNS = 1000 # Should be 1000
+    N_KNOWN_OUT_LOWER_VALUE = 2900 # Should be ~2900 
+    N_KNOWN_OUT_UPPER_VALUE = 4200 # Should be around 4000
+    INCR_STEP = 100 # Something from 50 to 100
+
+    path = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/'
+    files = os.listdir(path)
+    files.sort()
+
+    for i, file in enumerate(files):
+        success_attack_dict = {}
+        log_of_attacks_as_list = []
+        success_attack_dict['filename'] = file
+
+        for n_known_out in range(N_KNOWN_OUT_LOWER_VALUE, N_KNOWN_OUT_UPPER_VALUE, INCR_STEP):
+            print(f"[>] Testing dataset of file {file} for n_known_out = {n_known_out}")
+            n_runs = 0 
+            n_success = 0
+            list_of_succeeded_runs = []
+
+            while (n_runs < MAX_N_RUNS):
+                if (not estimate_good_attack_parameters_for_bike(n_known_out, n = 12323, weight = 71)):
+                    break
+                else:
+                    n_success += 1 # Success KR!
+                n_runs += 1
+
+            list_of_succeeded_runs.append(n_success)
+            success_attack_dict[f"{n_known_out}"] = list_of_succeeded_runs
+
+            if (n_success == MAX_N_RUNS):
+                print("-" * 80)
+                print(f"[+] Found optimal n_known_out = {n_known_out} for file {file}")
+                print("-" * 80)
+                break
+
+        
+        print(success_attack_dict)
