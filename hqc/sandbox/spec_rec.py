@@ -277,7 +277,7 @@ class SpectrumInfo:
         last_guesses = [None] * n_last_gueeses_to_keep_track;
 
         for i in range(n_tries):
-            print(i)
+            # print(i)
             x = self.recover(support=base_x)
 
             spectrum_x = get_spectrum(self.n, x)
@@ -599,7 +599,7 @@ def print_number_of_ciphertexts_needed_for_bike(path):
     print("=" * 80)
     print()
 
-    for i, file in enumerate(files):
+    for file in files:
         fullpath = os.path.join(path, file)
         print(f"{i}, {fullpath}, \t{test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['tag']} -> {test_if_key_recovery_is_possible_for_bike_challenge(fullpath)['min']}")
 
@@ -609,23 +609,64 @@ def print_number_of_ciphertexts_needed_for_bike(path):
 
 # FUNCTIONS ALLOWING REPRODUCTION OF THE ATTACKS
 
-def run_key_recovery_experiment_for_hqc_vect_add_fault():
+def run_key_recovery_experiment_for_hqc_vect_add_fault(path):
+    files = os.listdir(path)
+    files.sort()
+
     results = []
-    for i in range(1, 11):
-        res = run_key_recovery_against_real_dataset_hqc('results/hqc/1fault_vect_add/hqc1_seed%d_50M_vect_add_1fault.csv.xz' % i, 50000000, 1200, 5000)
+    for file in files:
+        res = run_key_recovery_against_real_dataset_hqc(os.path.join(path, file), 50000000, 1200, 5000)
         results.append(res)
     print()
     print('[+] Key recovery results: ', results)
 
 
-def run_key_recovery_experiment_for_bike_threshold_fault():
+def run_key_recovery_experiment_for_bike_threshold_fault(path):
+    files = os.listdir(path)
+    files.sort()
 
     results = []
-    for i in range(1, 11):
-        res = run_key_recovery_against_real_dataset_bike(f'results/bike/bike1_seed{i}_15M.csv.xz', 71, 5000000, 1500, 3500)
+    for file in files:
+        res = run_key_recovery_against_real_dataset_bike(os.path.join(path, file), 71, 2500000, 1400, 2900)
         results.append(res)
     print()
     print('[+] Key recovery results: ', results)
+ 
+def extract_optimal_value_out_of_spec_for_bike(path, max_n_runs = 1000, lower_value = 2900, upper_value = 4600, step = 100):
+    files = os.listdir(path)
+    files.sort()
+
+    for file in files:
+        success_attack_dict = {}
+        log_of_attacks_as_list = []
+        success_attack_dict['filename'] = file
+
+        for n_known_out in range(lower_value, upper_value, step):
+            print(f"[>] Testing dataset of file {file} for n_known_out = {n_known_out}")
+            n_runs = 0 
+            n_fails = 0
+            n_success = 0
+            list_of_succeeded_runs = []
+
+            while (n_runs < max_n_runs):
+                if (not estimate_good_attack_parameters_for_bike(n_known_out, n = 12323, weight = 71)):
+                    n_fails += 1
+                    break
+                else:
+                    n_success += 1 # Success KR!
+                n_runs += 1
+
+            list_of_succeeded_runs.append(n_success)
+            success_attack_dict[f"{n_known_out}"] = list_of_succeeded_runs
+
+            if (n_success == max_n_runs):
+                print("-" * 80)
+                print(f"[+] Found optimal n_known_out = {n_known_out} for file {file}")
+                print("-" * 80)
+                break
+
+        
+        print(success_attack_dict)
 
 
 if __name__ == '__main__':
@@ -638,47 +679,16 @@ if __name__ == '__main__':
         type = str,
         help = "Path to the CSV file."
     )
+
     args = parser.parse_args()
-
-    MAX_N_RUNS = 1000 # Should be 1000
-    N_KNOWN_OUT_LOWER_VALUE = 2900 # Should be ~2900 
-    N_KNOWN_OUT_UPPER_VALUE = 4600 # Should be around 4000
-    INCR_STEP = 100 # Something from 50 to 100
-
-    # path = '/home/lcupertino/Documents/repos/fia_on_code_kems/results/bike/'
     files = os.listdir(args.path)
     files.sort()
 
-    print_number_of_ciphertexts_needed_for_bike(args.path)
+    # Helper function
+    # print_number_of_ciphertexts_needed_for_bike(args.path)
+    # extract_optimal_value_out_of_spec_for_bike(args.path)
 
-    for i, file in enumerate(files):
-        success_attack_dict = {}
-        log_of_attacks_as_list = []
-        success_attack_dict['filename'] = file
+    run_key_recovery_experiment_for_bike_threshold_fault(args.path)
 
-        for n_known_out in range(N_KNOWN_OUT_LOWER_VALUE, N_KNOWN_OUT_UPPER_VALUE, INCR_STEP):
-            print(f"[>] Testing dataset of file {file} for n_known_out = {n_known_out}")
-            n_runs = 0 
-            n_fails = 0
-            n_success = 0
-            list_of_succeeded_runs = []
 
-            while (n_runs < MAX_N_RUNS):
-                if (not estimate_good_attack_parameters_for_bike(n_known_out, n = 12323, weight = 71)):
-                    n_fails += 1
-                    break
-                else:
-                    n_success += 1 # Success KR!
-                n_runs += 1
 
-            list_of_succeeded_runs.append(n_success)
-            success_attack_dict[f"{n_known_out}"] = list_of_succeeded_runs
-
-            if (n_success == MAX_N_RUNS):
-                print("-" * 80)
-                print(f"[+] Found optimal n_known_out = {n_known_out} for file {file}")
-                print("-" * 80)
-                break
-
-        
-        print(success_attack_dict)
