@@ -52,7 +52,9 @@ static void fia_schoolbook_mul(uint64_t *r, const uint64_t *a, const uint64_t *b
             if ((FIA_VECT_MUL_SCHOOLBOOK_TARGET_SECRET_COEFFICIENT == CURRENT_SCHOOLBOOK_COEFF_PROCESSED) && (N_FAULTS++ == 0)) {
                 // if (bit > 0)
                     // mask = -((ai >> (bit - 1)) & 1ULL); // Faulting an rsb
-                mask = -((ai >> bit)); // Faulting an and operation
+                // mask = -((ai >> bit)); // Faulting an and operation -- 64-bit case
+                uint32_t mask32 = -(ai >> bit);              // Simulates 32-bit behavior skipping and
+                mask = (((uint64_t) mask32) << 32) | mask32; // Simulates 32-bit behavior skipping and
             }
             if (sh == 0) {
                 for (size_t j = 0; j < n; j++) {
