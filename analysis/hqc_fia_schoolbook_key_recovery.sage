@@ -39,7 +39,8 @@ def extract_possible_support(df):
         if f[i] == 0 and f[i - 1] == 1:
             possible_support.add(i)
             possible_support.add(i + 1)
-            possible_support.add(i - 1)
+            possible_support.add(i + 2)
+            possible_support.add(i + 3)
 
     return possible_support
 
@@ -63,7 +64,7 @@ def test_if_key_recovery_is_possible(datafile):
     complexity = 1 / (binomial(n - w, n_zeros_needed)/binomial(n, n_zeros_needed))
     print('Attack complexity = ', numerical_approx(complexity))
 
-    return True
+    return [numerical_approx(complexity), n - len(y_candidate_support)]
 
 
 PARAM_N = 17669
