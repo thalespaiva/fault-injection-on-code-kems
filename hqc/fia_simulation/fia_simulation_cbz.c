@@ -144,42 +144,30 @@ int main(int argc, char *argv[]) {
     unsigned char ss1[SHARED_SECRET_BYTES];
     unsigned char ss2[SHARED_SECRET_BYTES];
 
-    // srand(base_seed);
+    srand(base_seed);
 
-    printf("base_seed = %d\n", base_seed);
     unsigned char seed[48] = {0};
-    seed[0] = base_seed;
+    for (int i = 0; i < 48; i++) {
+        seed[i] = rand();
+    }
     // syscall(SYS_getrandom, seed, 48, 0);
-
     prng_init(seed, NULL, 48, 0);
 
     crypto_kem_keypair(pk, sk);
 
-    syscall(SYS_getrandom, seed, 48, 0);
-
-    for (int i = 0; i < 48; i++) {
-        // seed[i] = i;
-        // printf("seed[i] = %d\n", seed[i]);
-    }
-    // prng_init(seed, personalization_string, 48, sizeof(personalization_string)  );
-    prng_init(seed, NULL, 48, 0);
-
-    // crypto_kem_keypair(pk, sk);
-
-    // srand(base_seed);
-
-    // // seed[48];
-    // for (int i = 0; i < 48; i++) {
-    //     seed[i] = i;
-    // }
-
-    // prng_init(seed, NULL, 48, 0);
+    uint64_t h[VEC_N_SIZE_64] = {0};
+    uint64_t s[VEC_N_SIZE_64] = {0};
+    hqc_ek_pke_from_string(h, s, pk);
 
 
-    printf("x,y\n");
+    printf("x,y,h,s\n");
     print_sparse_vector(global_x);
     printf(",");
     print_sparse_vector(global_y);
+    printf(",");
+    print_sparse_vector(h);
+    printf(",");
+    print_sparse_vector(s);
     printf("\n");
 
     int n_guess = 0;
@@ -202,46 +190,10 @@ int main(int argc, char *argv[]) {
         if ((last_decaps == 1) && (decaps_failure == 0)) {
             guess[n_guess++] = i;
             fprintf(stderr, "Adding %ld to guess\n", i);
-            fflush(stdout);
         }
         last_decaps = decaps_failure;
-        // printf("%ld,%d\n", i, decaps_failure);
+        printf("%ld,%d\n", i, decaps_failure);
+        fflush(stdout);
     }
-
-    printf("[*] Secret key guess: ");
-    for (int i = 0; i < n_guess; i++) {
-        printf("%d, ", guess[i]);
-    }
-
-
-    int y_support[PARAM_OMEGA] = {0};
-
-    int n_support = 0;
-    for (int i = 0; i < PARAM_N; i++) {
-        if ((global_y[i / 64] >> (i % 64)) & 1) {
-          y_support[n_support++] = i;
-        }
-    }
-    assert(n_support == PARAM_OMEGA);
-
-    int n_right_found = 0;
-    int n_wrong_found = 0;
-    for (int i = 0; i < n_guess; i++) {
-        int right_guess = 0;
-        for (int j = 0; j < PARAM_OMEGA; j++) {
-            if (guess[i] == y_support[j]) {
-                right_guess = 1;
-                break;
-            }
-        }
-        n_right_found += right_guess;
-        n_wrong_found += !right_guess;
-    }
-
-    printf("[+] n_right_found = %d", n_right_found);
-    printf("[+] n_wrong_found = %d", n_wrong_found);
-    printf("[+] total support = %d", PARAM_OMEGA);
-
-    return 0;
 }
 
