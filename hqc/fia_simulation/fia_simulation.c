@@ -216,9 +216,9 @@ int main(int argc, char *argv[]) {
                 printf("%ld,", i);
                 printf("%d,", d);
                 printf("%d,", spectrum_x.multiplicities[d]);
-                printf("%.4lf,", (double) r2_spec_fails[d] / r2_spec_total[d]);
+                printf("%.10lf,", (double) r2_spec_fails[d] / r2_spec_total[d]);
                 printf("%d,", spectrum_y.multiplicities[d]);
-                printf("%.4lf\n", (double) r1_spec_fails[d] / r1_spec_total[d]);
+                printf("%.10lf\n", (double) r1_spec_fails[d] / r1_spec_total[d]);
             }
             fflush(stdout);
         }
