@@ -13,15 +13,18 @@
 VERBOSE=0
 
 CC:=g++
-CFLAGS:=-m64 -O3
+CFLAGS:=-m64 -march=native -O3 -march=native -mtune=native -flto -funroll-loops -fomit-frame-pointer
 
 SRC:=*.c ntl.cpp FromNIST/rng.c
 INCLUDE:=-I. -I$(OpenSSL)/include -L$(OpenSSL)/lib -std=c++11 -lcrypto -lssl -lm -ldl -lntl -lgmp -lgf2x -lpthread
 
-all: bike-nist-kat
+all: bike-demo-test bike-flip-fia-simulation
 
 bike-demo-test: $(SRC) *.h tests/test.c
 	$(CC) $(CFLAGS) tests/test.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
+
+bike-flip-fia-simulation: $(SRC) *.h tests/fia_simulation.c
+	$(CC) $(CFLAGS) tests/fia_simulation.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
 
 bike-nist-kat: $(SRC) *.h FromNIST/*.h FromNIST/PQCgenKAT_kem.c
 	$(CC) $(CFLAGS) FromNIST/PQCgenKAT_kem.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
