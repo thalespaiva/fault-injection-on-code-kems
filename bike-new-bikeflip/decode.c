@@ -47,6 +47,9 @@
 #include <string.h>
 #include <math.h>
 
+int FIA_BIKEFLIP_ITER = 2;
+int BIKEFLIP_ITER = 0;
+
 // count number of 1's in tmp:
 uint32_t getHammingWeight(const uint8_t tmp[R_BITS], const uint32_t length)
 {
@@ -190,6 +193,8 @@ void BFIter(uint8_t e[R_BITS*2],
         if(pos[j] == 1){
             recompute_syndrome(s, j, h0_compact, h1_compact);
         }
+        if ((j == R_BITS + 11000) && (BIKEFLIP_ITER == FIA_BIKEFLIP_ITER))
+            break;
     }
 }
 
@@ -219,15 +224,17 @@ int BF_decoder(uint8_t e[R_BITS*2],
     getCol(h0_compact_col, h0_compact);
     getCol(h1_compact_col, h1_compact);
 
-		double Th_lb[NbIter]; // threshold lower bound
-		GetThresholdLowerBounds(Th_lb, s);
-		
+    double Th_lb[NbIter]; // threshold lower bound
+    GetThresholdLowerBounds(Th_lb, s);
+
+    BIKEFLIP_ITER = 0;
     for (int i = 0; i < NbIter; i++)
     {
-				double x = VAR_TH_FCT(getHammingWeight(s, R_BITS));
-				uint32_t T = ceil(MAX(Th_lb[i], x));
+        double x = VAR_TH_FCT(getHammingWeight(s, R_BITS));
+        uint32_t T = ceil(MAX(Th_lb[i], x));
 
         BFIter(e, s, T, h0_compact, h1_compact, h0_compact_col, h1_compact_col);
+        BIKEFLIP_ITER++;
     }
     if (getHammingWeight(s, R_BITS) == 0)
         return 0; // SUCCESS

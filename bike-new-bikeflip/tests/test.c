@@ -37,6 +37,10 @@
 #include "utilities.h"
 #include "measurements.h"
 
+uint8_t global_e0[R_SIZE];
+uint8_t global_e1[R_SIZE];
+
+
 ////////////////////////////////////////////////////////////////
 //                 Main function for testing
 ////////////////////////////////////////////////////////////////
@@ -48,15 +52,19 @@ int main(void)
     ss_t k_enc = {0}; // shared secret after encapsulate
     ss_t k_dec = {0}; // shared secret after decapsulate
 
-    MSG("BIKE Demo Test:\n");
+    // MSG("BIKE Demo Test:\n");
+    printf("hw,failure\n");
 
-    for (uint32_t i=1; i <= NUM_OF_CODE_TESTS; ++i)
+    // for (uint32_t i=1; i <= NUM_OF_CODE_TESTS; ++i)
+    // for (uint32_t i=1; i <= 1000; ++i)
+    for (uint32_t i=1; i <= 1; ++i)
     {
         status_t res = SUCCESS;
 
-        MSG("r: %d Code test: %d \n", (int) R_BITS, i);
+        // MSG("r: %d Code test: %d \n", (int) R_BITS, i);
         //Key generation.
-        MEASURE("  keygen", res = static_cast<status_t>(crypto_kem_keypair(pk.raw, sk.raw)););
+        // MEASURE("  keygen", res = static_cast<status_t>(crypto_kem_keypair(pk.raw, sk.raw)););
+        res = static_cast<status_t>(crypto_kem_keypair(pk.raw, sk.raw));
 
         if(res != SUCCESS)
         {
@@ -64,13 +72,15 @@ int main(void)
             continue;
         }
 
-        for (uint32_t j=1; j <= NUM_OF_ENCRYPTION_TESTS; ++j)
+        // for (uint32_t j=1; j <= NUM_OF_ENCRYPTION_TESTS; ++j)
+        for (uint32_t j=1; j <= 1000; ++j)
         {
             //MSG("Enc/Dec test: %d\n", j);
             uint32_t dec_rc = 0;
 
             //Encapsulate
-            MEASURE("  encaps", res = static_cast<status_t>(crypto_kem_enc(ct.raw, k_enc.raw, pk.raw)););
+            // MEASURE("  encaps", res = static_cast<status_t>(crypto_kem_enc(ct.raw, k_enc.raw, pk.raw)););
+            res = static_cast<status_t>(crypto_kem_enc(ct.raw, k_enc.raw, pk.raw));
 
             if(res != SUCCESS)
             {
@@ -79,21 +89,29 @@ int main(void)
             }
 
             //Decapsulate
-            MEASURE("  decaps", dec_rc = crypto_kem_dec(k_dec.raw, ct.raw, sk.raw););
+            // MEASURE("  decaps", dec_rc = crypto_kem_dec(k_dec.raw, ct.raw, sk.raw););
+            dec_rc = crypto_kem_dec(k_dec.raw, ct.raw, sk.raw);
 
-            if (dec_rc != 0)
-            {
-                MSG("Decoding failed after %d code tests and %d enc/dec tests!\n", i, j);
-            }
-            else
-            {
-                if (safe_cmp(k_enc.raw, k_dec.raw, sizeof(k_dec)/sizeof(uint64_t)))
-                {
-                    MSG("Success! decapsulated key is the same as encapsulated key!\n");
-                } else {
-                    MSG("Failure! decapsulated key is NOT the same as encapsulated key!\n");
-                }
-            }
+            int failure = dec_rc;
+
+            failure |= !safe_cmp(k_enc.raw, k_dec.raw, sizeof(k_dec)/sizeof(uint64_t));
+            printf("%d\n", failure);
+            fflush(stdout);
+
+
+            // if (dec_rc != 0)
+            // {
+            //     MSG("Decoding failed after %d code tests and %d enc/dec tests!\n", i, j);
+            // }
+            // else
+            // {
+            //     if (safe_cmp(k_enc.raw, k_dec.raw, sizeof(k_dec)/sizeof(uint64_t)))
+            //     {
+            //         MSG("Success! decapsulated key is the same as encapsulated key!\n");
+            //     } else {
+            //         MSG("Failure! decapsulated key is NOT the same as encapsulated key!\n");
+            //     }
+            // }
 
             DMSG("Initiator's generated key (K) of 256 bits = ");
             print((uint64_t*)k_enc.raw, ELL_SIZE*8);

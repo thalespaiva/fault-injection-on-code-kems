@@ -47,6 +47,9 @@
 #include "conversions.h"
 #include "shake_prng.h"
 
+extern uint8_t global_e0[R_SIZE];
+extern uint8_t global_e1[R_SIZE];
+
 // Function H. It uses the extract-then-expand paradigm based on SHA384 and
 // AES256-CTR PRNG to produce e from m and mu.
 _INLINE_ status_t functionH(
@@ -243,6 +246,9 @@ int crypto_kem_enc(OUT unsigned char *ct,
     // (e0, e1) = H(m, mu)
     functionH(e, m, mu);
     ntl_split_polynomial(e0, e1, e);
+
+    memcpy(global_e0, e0, R_SIZE);
+    memcpy(global_e1, e1, R_SIZE);
 
     // ct = (c0, c1) = (e0 + e1*h, L(e0, e1) \XOR m)
     ntl_mod_mul(l_ct->val0, e1, l_pk->val);
