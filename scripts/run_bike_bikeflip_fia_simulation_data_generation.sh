@@ -4,7 +4,7 @@ set -euo pipefail
 mkdir -p results/bike-new-bikeflip
 make -C bike-new-bikeflip
 
-max_jobs=2
+max_jobs=10
 total_seeds=10
 trials=2000000
 
