@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   uint32_t e1_spec_total[R_SPECTRUM_SIZE] = {0};
 
   // fprintf(stderr, "LEVEL = %d\n", LEVEL);
-  printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
+  printf("n_challenges,distance,spec_h0,spec_e0_failure,spec_e0_count,spec_e0_estimator,spec_h1,spec_e1_failure,spec_e1_count,spec_e1_estimator\n");
 
   for(size_t i = 1; i <= n_decaps; ++i) {
 
@@ -184,31 +184,23 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (i % CHECKPOINT_STEP == 0 && i != n_decaps) {
+    if ((i % CHECKPOINT_STEP == 0) || (i == n_decaps)){
       // Print key spec and the estimators
       for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
         printf("%ld,", i);
         printf("%d,", d);
         printf("%d,", spectrum_h0.multiplicities[d]);
+        printf("%d,", e0_spec_fails[d]);
+        printf("%d,", e0_spec_total[d]);
         printf("%.10lf,", (double) e0_spec_fails[d] / e0_spec_total[d]);
         printf("%d,", spectrum_h1.multiplicities[d]);
+        printf("%d,", e1_spec_fails[d]);
+        printf("%d,", e1_spec_total[d]);
         printf("%.10lf\n", (double) e1_spec_fails[d] / e1_spec_total[d]);
       }
       fflush(stdout);
     }
 
   }
-
-  // Print key spec and the estimators
-  // printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
-  for (int d = 1; d < R_SPECTRUM_SIZE; d++) {
-    printf("%ld,", n_decaps);
-    printf("%d,", d);
-    printf("%d,", spectrum_h0.multiplicities[d]);
-    printf("%.10lf,", (double) e0_spec_fails[d] / e0_spec_total[d]);
-    printf("%d,", spectrum_h1.multiplicities[d]);
-    printf("%.10lf\n", (double) e1_spec_fails[d] / e1_spec_total[d]);
-  }
-
   return 0;
 }
