@@ -93,7 +93,7 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint8_t *in, IN const u
   }
 }
 
-#define CHECKPOINT_STEP 1000
+#define CHECKPOINT_STEP 50000
 
 double rand01(void) {
     return (double) rand() / RAND_MAX;
@@ -102,8 +102,8 @@ double rand01(void) {
 int main(int argc, char *argv[])
 {
 
-  if (argc != 3) {
-    printf("Usage: %s <seed> <n_decaps>\n", argv[0]);
+  if (argc != 4) {
+    printf("Usage: %s <seed> <n_decaps> <encaps_base_seed>\n", argv[0]);
     exit(1);
   }
 
@@ -137,6 +137,10 @@ int main(int argc, char *argv[])
   // The vectors used to estimate the likelihood that a distance is in the spectrum of `h1`
   uint32_t e1_spec_fails[R_SPECTRUM_SIZE] = {0};
   uint32_t e1_spec_total[R_SPECTRUM_SIZE] = {0};
+
+
+  int encaps_base_seed = atoi(argv[3]);
+  srand(encaps_base_seed);
 
   // fprintf(stderr, "LEVEL = %d\n", LEVEL);
   printf("n_challenges,distance,spec_h0,spec_e0_failure,spec_e0_count,spec_e0_estimator,spec_h1,spec_e1_failure,spec_e1_count,spec_e1_estimator\n");

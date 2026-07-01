@@ -24,7 +24,7 @@ bike-demo-test: $(SRC) *.h tests/test.c
 	$(CC) $(CFLAGS) tests/test.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
 
 bike-flip-fia-simulation: $(SRC) *.h tests/fia_simulation.c
-	$(CC) $(CFLAGS) tests/fia_simulation.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
+	$(CC) $(CFLAGS) tests/fia_simulation.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -o $@
 
 bike-nist-kat: $(SRC) *.h FromNIST/*.h FromNIST/PQCgenKAT_kem.c
 	$(CC) $(CFLAGS) FromNIST/PQCgenKAT_kem.c $(SRC) $(INCLUDE) -DVERBOSE=$(VERBOSE) -DNIST_RAND=1 -o $@
