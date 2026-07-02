@@ -117,6 +117,10 @@ void get_r_spectrum(OUT r_spectrum_t *spectrum, IN const uint64_t *in, IN const 
 
 #define CHECKPOINT_STEP 100000
 
+double rand01(void) {
+    return (double) rand() / RAND_MAX;
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -162,6 +166,8 @@ int main(int argc, char *argv[])
   fprintf(stderr, "LEVEL = %d\n", LEVEL);
   printf("n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator\n");
 
+  const double FIA_ERROR_RATE = 0.004; // repeatability 99.6%
+
   for(size_t i = 1; i <= n_decaps; ++i) {
 
     uint32_t dec_rc = 0;
@@ -181,6 +187,7 @@ int main(int argc, char *argv[])
     // Decapsulate
     dec_rc = crypto_kem_dec(k_dec.val, ct.val, sk.val);
 
+
     // Check test status
     int decaps_failure = 0;
     if(dec_rc != 0) {
@@ -191,6 +198,10 @@ int main(int argc, char *argv[])
       } else {
         decaps_failure = 1;
       }
+    }
+
+    if (rand01() <= FIA_ERROR_RATE) {
+      decaps_failure ^= 1;
     }
 
     // Update
