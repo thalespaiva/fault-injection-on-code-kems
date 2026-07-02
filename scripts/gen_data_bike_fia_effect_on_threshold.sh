@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 cd bike
 rm -r tmp_build_bike
 
