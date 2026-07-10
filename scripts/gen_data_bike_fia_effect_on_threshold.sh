@@ -17,7 +17,6 @@ make -C tmp_build_bike
 rm -r tmp_build_bike
 echo "[+] Done"
 
-
 echo "[*] Generating data for BIKE Level 5..."
 cmake -DLEVEL=5 -B tmp_build_bike
 make -C tmp_build_bike
