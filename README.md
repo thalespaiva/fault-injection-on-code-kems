@@ -69,7 +69,7 @@ available in ```results/```.
 
 ## Reproducing the results
 
-Firt, we list the necessary dependencies, and then we introduce the scripts for
+First, we list the necessary dependencies, and then we introduce the scripts for
 the complete reproduction.
 
 ### Tools
@@ -109,6 +109,40 @@ cmake -B build
 
 Once you finish, you will have to run the corresponding ```make``` command for
 BIKE and HQC, depending on the attack.
+
+### Attack on HQC's polynomial multiplication
+
+#### Running the key recovery experiment for HQC's polynomial multiplication
+
+### Attack on HQC's vector addition
+
+The executable is located at:
+
+```terminal
+$(pwd)/hqc/build/fia_simulation
+```
+
+Under the name
+
+```terminal
+fia_simulation_hqc_1
+```
+
+And with usage as follows:
+
+```terminal
+Usage: ./fia_simulation_hqc_1 <n_decaps>
+```
+
+The corresponding results are located at ```$(pwd)/results/hqc/1fault_vect_add/```.
+
+#### Running the key recovery experiment for HQC's vector addition
+
+To run the key recovery algorithm, run the following:
+
+```terminal
+python3 spec_rec.py hqc add $(pwd)/results/hqc/1fault_vect_add/
+```
 
 ### Attack on BIKE's BGF threshold
 
@@ -224,7 +258,3 @@ Run the following:
 ```terminal
 python3 spec_rec.py bike bikeflip $(pwd)/results/bike/bike-new-bikeflip/
 ```
-
-### Attack on HQC's vector addition
-
-### Attack on HQC's polynomial multiplication
