@@ -43,12 +43,12 @@ and the vector addition of HQC, correspondingly)
   * System setup and dependencies
   * The main script for reproducing all results
 * Short guide to the code
-  * Compilation
+  * Compilation and dataset reproduction
     * Attack on HQC's polynomial multiplication
     * Attack on HQC's vector addition
     * Attack on BIKE's BGF threshold
     * Attack on BIKE-flip iteration
-  * Dataset reproduction
+  * Running the attacks
 
 ## Overview of this package
 
@@ -97,9 +97,9 @@ Executing this script would generate the csv data in the ```results/```
 directory. Analogously, for the other attacks, the procedure is very
 much the same (in general lines).
 
-## Short guid to the code
+## Short guide to the code
 
-### Compilation
+### Compilation and dataset reproduction
 
 To compile the code, run the following from the project's root directory:
 
@@ -135,14 +135,6 @@ Usage: ./fia_simulation_hqc_1 <n_decaps>
 ```
 
 The corresponding results are located at ```$(pwd)/results/hqc/1fault_vect_add/```.
-
-#### Running the key recovery experiment for HQC's vector addition
-
-To run the key recovery algorithm, run the following:
-
-```terminal
-python3 spec_rec.py hqc add $(pwd)/results/hqc/1fault_vect_add/
-```
 
 ### Attack on BIKE's BGF threshold
 
@@ -189,28 +181,6 @@ n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator
 100000,19,0,0.6406,0,0.6421
 ```
 
-#### Running the key recovery experiment for BGF threshold
-
-The Python script that conducts the key recovery algorithm described in the
-paper is located in the root directory of this repository.
-You can run it as follows:
-
-```terminal
-python3 spec_rec.py alg atk <path to csv_containing the results of the simulation>
-```
-
-Where ```alg``` is either ```bike``` or ```hqc```.
-And ```atk``` is either ```bgf``` or ```bikeflip``` for BIKE,
-and either ```add``` or ```mult``` for HQC.
-To illustrate, consider the following example:
-
-```terminal
-python3 spec_rec.py bike <atk> $(pwd)/results/bike/
-```
-
-Assuming you are running from the root directory and the results are located
-in ```results/bike```.
-
 ### Attack on BIKE-flip iteration
 
 To run this attack, execute the following command:
@@ -251,10 +221,12 @@ distance,spec_h0,spec_h1,n_challenges,spec_e0_failure,spec_e0_count,spec_e1_fail
 19,0,0,2000000,414207,722472,420760,723932,0.5733191044081986,0.5812148102307951
 ```
 
-#### Running key recovery experiment for BIKE-flip
+### Running the attacks
 
-Run the following:
+Run the following to reproduce all the attacks:
 
 ```terminal
-python3 spec_rec.py bike bikeflip $(pwd)/results/bike/bike-new-bikeflip/
+python3 spec_rec.py
 ```
+
+The file contains the scripts for running all the attacks in the main function. If you want to customize it by running only one of the presented attacks, simply comment all the others in the main function.
