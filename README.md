@@ -41,7 +41,7 @@ and the vector addition of HQC, correspondingly)
 * Overview of this package
 * Reproducing the results
   * System setup and dependencies
-  * The main script for reproducing all results
+  * The main script for generating the dataset
 * Short guide to the code
   * Compilation and dataset reproduction
     * Attack on HQC's polynomial multiplication
@@ -80,7 +80,7 @@ To reproduce our experiments, we make use of the following tools:
 2. gcc
 3. Python3 and the dependencies listed in ```requirements.txt```.
 
-### The main script for reproducing all results
+### The main script for generating the dataset
 
 It is important to notice that to generate all the data, it would
 take, approximately, 24 hours on a commodity device.
@@ -112,14 +112,30 @@ BIKE and HQC, depending on the attack.
 
 ### Attack on HQC's polynomial multiplication
 
-#### Running the key recovery experiment for HQC's polynomial multiplication
+The executable is located at:
+
+```terminal
+$(pwd)/build/hqc/fia_simulation/
+```
+
+Under the name
+
+```terminal
+fia_simulation_cbz_hqc_1
+```
+
+And with usage as follows:
+
+```terminal
+Usage: ./fia_simulation_cbz_hqc_1 <seed>
+```
 
 ### Attack on HQC's vector addition
 
 The executable is located at:
 
 ```terminal
-$(pwd)/hqc/build/fia_simulation
+$(pwd)/build/hqc/fia_simulation
 ```
 
 Under the name
@@ -229,4 +245,6 @@ Run the following to reproduce all the attacks:
 python3 spec_rec.py
 ```
 
-The file contains the scripts for running all the attacks in the main function. If you want to customize it by running only one of the presented attacks, simply comment all the others in the main function.
+The file contains the scripts for running all the attacks in the main function.
+If you want to customize it by running only one of the presented attacks, simply
+comment all the others in the main function.
