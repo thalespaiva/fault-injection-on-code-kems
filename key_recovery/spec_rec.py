@@ -321,6 +321,7 @@ class SpectrumInfo:
             print("   ", x)
         else:
             print("[-] Not found : (")
+        print("=" * 80)
 
         return found_key
 
@@ -701,29 +702,32 @@ def run_key_recovery_attack_on_hqc_vect_add():
     print("[+] Finished attack on HQC (vect_add)")
 
 
-def run_key_recovery_experiment_for_bike_threshold_fault(path, n_challenges=3000000):
+def run_key_recovery_experiment_for_bike_threshold_fault(path, n_challenges, n_distances_in, n_distances_out):
     files = os.listdir(path)
     files.sort()
 
     results = []
     for file in files:
-        res = run_key_recovery_against_real_dataset_bike(
-            os.path.join(path, file), 71, n_challenges, 1400, 2900
-        )
-        results.append(res)
+        if file.endswith('.csv') or file.endswith('.csv.xz'):
+            print('[*] FILE: ', file)
+            res = run_key_recovery_against_real_dataset_bike(
+                # os.path.join(path, file), 71, n_challenges, 1400, 2900
+                os.path.join(path, file), 71, n_challenges, n_distances_in, n_distances_out
+            )
+            results.append(res)
     print()
     print("[+] Key recovery results: ", results)
 
 def run_key_recovery_attack_on_bike_bgf():
     print("[+] Running key recovery attack on BIKE (BGF)")
     path = os.path.join(os.getcwd(),'results/bike/bike-results-original')
-    run_key_recovery_experiment_for_bike_threshold_fault(path, 3000000)
+    run_key_recovery_experiment_for_bike_threshold_fault(path, 3000000, 1500, 3500)
     print("[+] Finished attack on BIKE (BGF)")
 
 def run_key_recovery_attack_on_bike_bikeflip():
     print("[+] Running key recovery attack on BIKE (BIKE-Flip)")
     path = os.path.join(os.getcwd(),'results/bike-new-bikeflip')
-    run_key_recovery_experiment_for_bike_threshold_fault(path, 10000000)
+    run_key_recovery_experiment_for_bike_threshold_fault(path, 10000000, 1500, 3500)
     print("[+] Finished attack on BIKE (BIKE-Flip)")
 
 
