@@ -689,7 +689,7 @@ def run_key_recovery_experiment_for_hqc_vect_add_fault(path, n_challenges=500000
     results = []
     for file in files:
         res = run_key_recovery_against_real_dataset_hqc(
-            os.path.join(path, file), n_challenges, 1200, 5000
+            os.path.join(path, file), n_challenges, 1200, 4900
         )
         results.append(res)
     print()
