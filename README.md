@@ -55,8 +55,7 @@ and the vector addition of HQC, correspondingly)
 * ```README.md```: this file.
 * ```requirements.txt```: the packages needed to create the Python3 environment
 to reproduce the attacks.
-* ```spec_rec.py```: the Python3 script to reproduce the attack.
-* ```analysis/```:
+* ```key_recovery/```: directory with Python3 and Sage scripts to reproduce the attacks.
 * ```bike/```, ```bike_arm_asm_faulted_threshold```, ```bike-new-bikeflip/```,
 and ```hqc/```: Source codes containing the implementation of BIKE and HQC.
 In BIKE's case, the first two directories contain the code associated
@@ -78,7 +77,8 @@ To reproduce our experiments, we make use of the following tools:
 
 1. CMake version 3.50 (or higher).
 2. gcc
-3. Python3 and the dependencies listed in ```requirements.txt```.
+3. Python3 and the dependencies listed in ```requirements.txt```
+4. Sage.
 
 ### The main script for generating the dataset
 
@@ -239,12 +239,22 @@ distance,spec_h0,spec_h1,n_challenges,spec_e0_failure,spec_e0_count,spec_e1_fail
 
 ### Running the attacks
 
-Run the following to reproduce all the attacks:
+Run the following to reproduce all the attacks that depend on information extracted
+from the spectrum:
 
 ```terminal
-python3 spec_rec.py
+python3 key_recovery/spec_rec.py
 ```
 
+You will observe the execution of the attack on each dataset.
 The file contains the scripts for running all the attacks in the main function.
 If you want to customize it by running only one of the presented attacks, simply
 comment all the others in the main function.
+
+To run the attack on HQC polynomial multiplication, we provide a Sage script that 
+can also be executed from the root directory of this repository. You can run it 
+as follows:
+
+```terminal
+sage key_recovery/hqc_fia_schoolbook_key_recovery.sage
+```
