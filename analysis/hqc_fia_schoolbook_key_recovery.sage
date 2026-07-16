@@ -2,6 +2,7 @@ from sage.all import *
 import pandas as pd
 from ast import literal_eval
 
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -25,96 +26,90 @@ def parse_fia_simulation_csv(datafile):
 
     return (x, y), (h, s), df
 
-def extract_possible_support(df):
+def extract_set_z_of_known_null_entries(df):
     f = list(df.failure_rate)
     n = len(df)
 
-    possible_support = set()
-    for i in range(n):
-        if i % 64 == 0:
-            possible_support.add(i)
-            continue
-        # if i == 0: continue
+    zeros = set(range(n))
+    for block in range(n//64 + 1):
+        zeros.discard(block * 64)
+        for i in range(1, 64):
+            idx = block * 64 + i
+            if idx >= n:
+                break
+            if f[idx] == 0 and f[idx - 1] == 1:
+                for l in range(4):
+                    zeros.discard(block * 64 + i + l)
 
-        if f[i] == 0 and f[i - 1] == 1:
-            possible_support.add(i)
-            possible_support.add(i + 1)
-            possible_support.add(i + 2)
-            possible_support.add(i + 3)
+    return zeros
 
-    return possible_support
+def extract_set_z_of_known_null_entries_optimized(df):
+    f = list(df.failure_rate)
+    n = len(df)
+
+    # Discard n//64 entries of f (less decapsulations) by
+    # conservatively fixing them as 1
+    for i in range(n//64 + 1):
+        f[64*i] = 1
+
+    zeros = set(range(n))
+    for block in range(n//64 + 1):
+        zeros.discard(block * 64)
+        for i in range(1, 64):
+            idx = block * 64 + i
+            if idx >= n:
+                break
+            if f[idx] == 0 and f[idx - 1] == 1:
+                for l in range(4):
+                    zeros.discard(block * 64 + i + l)
+
+    return zeros
 
 
-def test_if_key_recovery_is_possible(datafile):
+def test_if_key_recovery_is_possible(datafile, optimized=False):
     (x, y), (h, s), df = parse_fia_simulation_csv(datafile)
 
     n = len(df)
     w = len(x)
 
-    print(y)
-    y_candidate_support = extract_possible_support(df)
-    print(f'{len(y_candidate_support)=}')
-    print(f'{len(set(y) - set(y_candidate_support))=}')
+    # print(y)
+    # y_candidate_support = extract_possible_support(df)
+    if optimized:
+        y_candidate_support = set(range(n)) - extract_set_z_of_known_null_entries_optimized(df)
+    else:
+        y_candidate_support = set(range(n)) - extract_set_z_of_known_null_entries(df)
+
+
+    # print(f'{len(y_candidate_support)=}')
+    # print(f'{len(set(y) - set(y_candidate_support))=}')
     if (len(set(y) - set(y_candidate_support))):
         print('[-] Oh no, key recovery is not possible!')
         print('set(y) - set(y_candidate_support) = ', set(y) - set(y_candidate_support))
-        return False
+        return None
 
     n_zeros_needed = len(y_candidate_support)
     complexity = 1 / (binomial(n - w, n_zeros_needed)/binomial(n, n_zeros_needed))
-    print('Attack complexity = ', numerical_approx(complexity))
+    # print(f'[* {datafile}] Attack cost = ', numerical_approx(complexity))
 
-    return [numerical_approx(complexity), n - len(y_candidate_support)]
-
-
-PARAM_N = 17669
-F2 = GF(2)
-F2x = PolynomialRing(F2, 'x')
-varx = F2x.gen()
-R = F2x.quotient(varx**PARAM_N - 1, 'x')
-varx = R.gen()
-
-def sparse_to_poly(sparse_vec):
-    v = [0] * PARAM_N
-    for i in sparse_vec:
-        v[i] = 1
-    return R(v)
-
-def run_key_recovery(datafile='../results/hqc/1fault_schoolbook_mul/hqc1_seed2.csv'):
-    (x, y), (h, s), df = parse_fia_simulation_csv(datafile)
-
-    # x + y * h = s
+    # return [numerical_approx(complexity), n - len(y_candidate_support)]
+    return numerical_approx(complexity)
 
 
 
-# def plot_key_relation_for_fia_schoolbook_mul(datafile='../results/hqc/1fault_schoolbook_mul/hqc1_seed1.csv'):
-#     (x, y), df = parse_fia_simulation_csv(datafile)
+if __name__ == '__main__':
 
-#     # fig, axs = plt.subplots(6, 1, figsize=(TCHES_FIG_WIDTH, TCHES_SMALL_FIG_HEIGHT))
-#     fig, axs = plt.subplots(6, 1)
+    costs_not_optimized = []
+    costs_optimized = []
+    for i in range(1, 51):
+        cost = test_if_key_recovery_is_possible(f'results/hqc/1fault_schoolbook_mul/hqc1_seed{i}.csv')
+        cost_opt = test_if_key_recovery_is_possible(
+            f'results/hqc/1fault_schoolbook_mul/hqc1_seed{i}.csv', optimized=True)
+        costs_not_optimized.append(cost)
+        costs_optimized.append(cost_opt)
 
-#     for i, ax, base in zip(range(6), axs, range(0, 17669, 3000)):
-#         d = df[(base <= df.position) & (df.position < base + 3000)]
-#         sns.lineplot(data=d, x='position', y='failure_rate', ax=ax)
-#         for v in y:
-#             ax.axvline(v, c='red')
-#         ax.set_xlim(base, base + 3000)
-#         ax.set_ylabel('Failed?')
+    # print(costs)
 
-#         if (i < 5):
-#             ax.set_xlabel('')
-
-#     plt.tight_layout()
-
-
-def to_32bit_binary(value: int) -> str:
-    """
-    Return the 32-bit two's-complement binary representation of an integer.
-
-    Examples:
-        to_32bit_binary(5)   -> '00000000000000000000000000000101'
-        to_32bit_binary(-5)  -> '11111111111111111111111111111011'
-        to_32bit_binary(-1)  -> '11111111111111111111111111111111'
-    """
-    return format(value & 0xFFFFFFFF, "032b")
+    n = 17669
+    print(f'[+] Avg cost (not optimized): {n} decaps and {np.mean(costs_not_optimized)} guesses')
+    print(f'[+] Avg cost (optimized): {n - n//64} decaps and {np.mean(costs_optimized)} guesses')
 
