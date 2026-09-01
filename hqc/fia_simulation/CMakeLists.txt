@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 
 file(GLOB BENCH_SRCS
         "${CMAKE_CURRENT_SOURCE_DIR}/fia_simulation.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/fia_simulation_cbz.c"
         # "${CMAKE_CURRENT_SOURCE_DIR}/gen_hw_s_plot_data.c"
 )
 
