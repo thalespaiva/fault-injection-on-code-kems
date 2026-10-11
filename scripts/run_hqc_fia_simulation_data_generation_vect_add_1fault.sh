@@ -14,7 +14,7 @@ make -C tmp_build_hqc_avx256
 
 cd ..
 
-max_jobs=2
+max_jobs=10
 total_seeds=10
 trials=50000000
 
