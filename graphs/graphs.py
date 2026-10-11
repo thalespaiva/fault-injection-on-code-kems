@@ -14,7 +14,7 @@ TCHES_HALF_PAGE_FIG = 2.2
 TCHES_HALF_PAGE_FIG_BIG = 2.4
 TCHES_HALF_PAGE_FIG_SMALL = 2
 
-def latexify_tches(fig_width=TCHES_FIG_WIDTH, fig_height=TCHES_SMALL_FIG_HEIGHT, small=False, fs=9):
+def latexify_tches(fig_width=TCHES_FIG_WIDTH, fig_height=TCHES_SMALL_FIG_HEIGHT, small=False, fs=8):
 
     sns.reset_orig()
 
@@ -163,7 +163,7 @@ def plot_spectrum_bike(datafile='results/bike/bike1_seed1_15M.csv.xz'):
 
 
 
-def plot_spectrum_hqc(datafile='results/hqc/1fault_vect_add/hqc1_seed1_50M_vect_add_1fault_2.csv'):
+def plot_spectrum_hqc(datafile='results/hqc/1fault_vect_add/hqc1_seed1_50M_vect_add_1fault.csv.xz'):
     (x, y), df = parse_fia_simulation_csv(datafile)
     df = df[df.n_challenges == 47000000]
 
@@ -186,3 +186,67 @@ def plot_spectrum_hqc(datafile='results/hqc/1fault_vect_add/hqc1_seed1_50M_vect_
 
     # plt.savefig('paper/figs/tp_figs/spectrum_hqc_50M.pdf')
     plt.savefig('hqc_spectrum_hqc_50M2.pdf')
+
+
+def plot_spectrum_hqc_half(datafile='results/hqc/1fault_vect_add/hqc1_seed1_50M_vect_add_1fault.csv.xz'):
+    (x, y), df = parse_fia_simulation_csv(datafile)
+    df = df[df.n_challenges == 47000000]
+
+    fig, ax = plt.subplots(1, 1, figsize=(TCHES_FIG_WIDTH/2, TCHES_SMALL_FIG_HEIGHT/1.5))
+
+    palette = ['1', '0.8', '0.5', '0.2', '0']
+
+    u = np.sort(np.unique(df.spec_r1_estimator))
+    mid = (u[:-1] + u[1:]) / 2
+    edges = np.r_[u[0] - (mid[0] - u[0]), mid, u[-1] + (u[-1] - mid[-1])]
+
+    sns.histplot(data=df, x='spec_r1_estimator', multiple="stack", hue='spec_y', bins=edges,
+                 palette=palette, binwidth=0.00003)
+    # plt.xlim(0.3557, 0.35723)
+    # plt.xlim(0.3556, 0.35723)
+    plt.xlim(0.3555, 0.3573)
+    # plt.xticks([0.3556, 0.35723])
+    plt.xlabel('Decryption failure rate for cyclic distance')
+    leg = plt.gca().get_legend()
+    leg.set_title('Multiplicity in\nsecret spectrum')
+    leg.get_title().set_multialignment('center')
+    sns.despine()
+    plt.tight_layout()
+
+    fig.subplots_adjust(
+        left=0.17,
+        right=0.97,
+        bottom=0.25,
+        top=0.98
+    )
+
+
+
+    # plt.savefig('paper/figs/tp_figs/spectrum_hqc_50M.pdf')
+    plt.savefig('paper/figs/tp_figs/hqc_spectrum_hqc_50M_half.pdf')
+
+
+def plot_spectrum_bike_half(datafile='results/bike/bike-results-original/bike1_seed10_FIAerror0.004_5M.csv.xz'):
+    df = pd.read_csv(datafile)
+
+    fig, ax = plt.subplots(1, 1, figsize=(TCHES_FIG_WIDTH/2, TCHES_SMALL_FIG_HEIGHT/1.5))
+
+    palette = ['1', '0.8', '0.5', '0.2', '0']
+    sns.histplot(data=df[df.n_challenges == 3000000], x='spec_e0_estimator', multiple="stack", hue='spec_h0', binwidth=0.0002,
+                 palette=palette)
+    plt.xlabel('Decryption failure rate for cyclic distance')
+    leg = plt.gca().get_legend()
+    leg.set_title('Multiplicity in\nsecret spectrum')
+    leg.get_title().set_multialignment('center')
+    sns.despine()
+    plt.tight_layout()
+
+    fig.subplots_adjust(
+        left=0.17,
+        right=0.97,
+        bottom=0.25,
+        top=0.98
+    )
+
+
+    plt.savefig('paper/figs/tp_figs/spectrum_bike_3M_half.pdf')
