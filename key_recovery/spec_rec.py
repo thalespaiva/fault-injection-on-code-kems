@@ -482,7 +482,7 @@ def run_key_recovery_against_real_dataset_hqc(
         recovery_parameters=KeyFromSpectrumAlgorithmParams(7, 10, 20),
     )
 
-    return si.test_if_recovery_works(x, n_tries=1000, seed=seed)
+    return si.test_if_recovery_works(x, n_tries=10000, seed=seed)
 
 
 def run_key_recovery_against_real_dataset_bike(
@@ -688,9 +688,11 @@ def run_key_recovery_experiment_for_hqc_vect_add_fault(path, n_challenges=500000
 
     results = []
     for file in files:
+        print(f"[+] Running key recovery for: {file}")
         res = run_key_recovery_against_real_dataset_hqc(
-            os.path.join(path, file), n_challenges, 1200, 4900
+            os.path.join(path, file), n_challenges, 1200, 4800
         )
+        print(f"[+] Done key recovery for: {file}")
         results.append(res)
     print()
     print("[+] Key recovery results: ", results)
