@@ -1,8 +1,10 @@
 # Exploring fault injection attacks on HQC and BIKE beyond the Fujisaki-Okamoto verification
 
+> Thales B. Paiva, Lucas C. Cardoso, Keerthi Kamalakshan, Hariprasad Valsaraj Kelassery, Marcos A. Simplicio Jr., and Shivam Bhasin
+
 **Abstract**. This repository contains the code and data associated with our
 paper "Exploring fault injection attacks on HQC and BIKE beyond the
-Fujisaki-Okamoto verification".
+Fujisaki-Okamoto verification", TCHES 2027, Issue 1.
 Our implementation includes 2 main components: (i) code to fully reproduce the key
 recovery attacks on HQC and BIKE, and (ii) the dataset obtained from our
 experiments in software. Additionally, we also include the code to reproduce
@@ -34,7 +36,9 @@ is either ```bike``` or ```hqc```, and ```<atk_name>``` is the name of
 the considered attack (i.e., ```bikeflip``` and ```bgf``` for the attacks on
 the corresponding BIKE's decoder version, and ```schoolbook_1fault```
 and ```vect_add_1fault``` are the attacks on the polynomial multiplication
-and the vector addition of HQC, correspondingly)
+and the vector addition of HQC, correspondingly). If you want to run
+the complete data acquisition + attacks, you can run the bash script
+run_complete_artifact.sh.
 
 ## Table of Contents
 
@@ -75,10 +79,10 @@ the complete reproduction.
 
 To reproduce our experiments, we make use of the following tools:
 
-1. CMake version 3.50 (or higher).
+1. CMake version 3.50 (or higher)
 2. gcc
 3. Python3 and the dependencies listed in ```requirements.txt```
-4. Sage.
+4. Sage
 
 ### The main script for generating the dataset
 
@@ -110,7 +114,7 @@ cmake -B build
 Once you finish, you will have to run the corresponding ```make``` command for
 BIKE and HQC, depending on the attack.
 
-### Attack on HQC's polynomial multiplication
+#### Attack on HQC's polynomial multiplication
 
 The executable is located at:
 
@@ -130,7 +134,15 @@ And with usage as follows:
 Usage: ./fia_simulation_cbz_hqc_1 <seed>
 ```
 
-### Attack on HQC's vector addition
+To produce a seed on any desired value, simply map the output of the previous command to a csv file, preferably with the name of the form
+
+```terminal
+./build/hqc/fia_simulation/fia_simulation_hqc_1 <value> >> hqc1_seed<value>.csv
+```
+
+The rest of the experiments follows the same step by step.
+
+#### Attack on HQC's vector addition
 
 The executable is located at:
 
@@ -152,7 +164,7 @@ Usage: ./fia_simulation_hqc_1 <n_decaps>
 
 The corresponding results are located at ```$(pwd)/results/hqc/1fault_vect_add/```.
 
-### Attack on BIKE's BGF threshold
+#### Attack on BIKE's BGF threshold
 
 You can reproduce this (and the other attacks) by simply running the
 corresponding scripts in the ```scripts/``` directory.
@@ -166,7 +178,7 @@ make -C build
 An executable named ```bike-fia-simulation``` will be located in ```fia_on_code_kems/bike/build```.
 
 ```terminal
-$ ./bike/build/bike-fia-simulation
+$ ./build/bike/bike-fia-simulation
 Usage: ./bike-fia-simulation <seed> <n_decaps>
 ```
 
@@ -197,7 +209,7 @@ n_challenges,distance,spec_h0,spec_e0_estimator,spec_h1,spec_e1_estimator
 100000,19,0,0.6406,0,0.6421
 ```
 
-### Attack on BIKE-flip iteration
+#### Attack on BIKE-flip iteration
 
 To run this attack, execute the following command:
 
@@ -251,8 +263,8 @@ The file contains the scripts for running all the attacks in the main function.
 If you want to customize it by running only one of the presented attacks, simply
 comment all the others in the main function.
 
-To run the attack on HQC polynomial multiplication, we provide a Sage script that 
-can also be executed from the root directory of this repository. You can run it 
+To run the attack on HQC polynomial multiplication, we provide a Sage script that
+can also be executed from the root directory of this repository. You can run it
 as follows:
 
 ```terminal
