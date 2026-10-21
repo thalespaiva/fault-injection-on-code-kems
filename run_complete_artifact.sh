@@ -20,4 +20,8 @@ python3 merge.py
 echo "Finished the data generation phase"
 echo "Running the attacks"
 python3 key_recovery/spec_rec.py
-sage key_recovery/hqc_fia_schoolbook_key_recovery.sage
+
+# This last step for key recovery uses sage to estimate attack cost.
+# sage --version: 10.9
+# python --version: Python 3.14.7
+python key_recovery/hqc_fia_schoolbook_key_recovery.sage
